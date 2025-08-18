@@ -1,0 +1,13 @@
+.mainHead {
+  padding-left: 20px;
+}
+
+.createNew {
+  margin-left: 20px;
+  background-color: #28a745;
+  color: white;
+  border: 2px solid #28a745;
+  padding: 10px 20px;
+  border-radius: 5px;
+  cursor: pointer;
+}
