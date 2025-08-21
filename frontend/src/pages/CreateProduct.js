@@ -42,7 +42,7 @@ const CreateProduct = () => {
     };
 
     try {
-      const response = await fetch("http://your-backend-url/api/products", {
+      const response = await fetch("http://localhost:5000/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
