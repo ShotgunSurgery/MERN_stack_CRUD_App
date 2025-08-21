@@ -3,6 +3,7 @@ import { createProduct, updateProduct } from "../controllers/productController.j
 import {
   getProductWithParameters,
   saveProductValues,
+  getProductValues,
 } from "../controllers/parameterController.js";
 import { allProducts } from "../controllers/allProducts.js";
 
@@ -17,6 +18,9 @@ router.put("/:productId", updateProduct);
 
 // GET product with parameters
 router.get("/:productId", getProductWithParameters);
+
+// GET existing parameter values
+router.get("/:productId/values", getProductValues);
 
 // POST save parameter values
 router.post("/:productId/values", saveProductValues);
