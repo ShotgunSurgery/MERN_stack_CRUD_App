@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "../styles/CreateProduct.css";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { Link } from "react-router-dom";
 
 const CreateProduct = () => {
   const [parameters, setParameters] = useState([]);
@@ -41,7 +42,7 @@ const CreateProduct = () => {
     };
 
     try {
-      const response = await fetch("http://your-backend-url/api/products", {
+      const response = await fetch("http://localhost:5000/api/products", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
@@ -198,6 +199,11 @@ const CreateProduct = () => {
       <button className="sb" onClick={submitProduct}>
         Save Values
       </button>
+      <Link to="/parameters">
+          <button className="sb" onClick={submitProduct}>
+        Next
+      </button>
+      </Link>
     </div>
   );
 };
