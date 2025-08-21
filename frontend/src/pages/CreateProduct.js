@@ -1,11 +1,35 @@
 import React, { useState } from "react";
 import "../styles/CreateProduct.css";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 
 const CreateProduct = () => {
-  const [parameters, setParameters] = useState([]);
-  const [productName, setProductName] = useState("");
+  const location = useLocation();
+  const productData = location.state?.productData;
+
+  const [productName, setProductName] = useState(
+    productData ? productData.name : ""
+  );
+  
+  // Map database field names to frontend field names
+  const mapParametersForFrontend = (dbParameters) => {
+    return dbParameters.map(param => ({
+      parameterName: param.parameterName,
+      max: param.max_value || "", // Map max_value to max
+      min: param.min_value || "", // Map min_value to min
+      unit: param.unit || "",
+      evaluation: param.evaluation || "",
+      sampleSize: param.sample_size || "", // Map sample_size to sampleSize
+      compulsory: param.compulsory === 1 || param.compulsory === true, // Handle boolean conversion
+      status: param.status || "",
+    }));
+  };
+
+  const [parameters, setParameters] = useState(
+    productData ? mapParametersForFrontend(productData.parameters) : []
+  );
+
+
 
   const deleteParameter = (index) => {
     const updated = [...parameters];
@@ -42,8 +66,15 @@ const CreateProduct = () => {
     };
 
     try {
-      const response = await fetch("http://localhost:5000/api/products", {
-        method: "POST",
+      const isEditMode = productData && productData.id;
+      const url = isEditMode 
+        ? `http://localhost:5000/api/products/${productData.id}`
+        : "http://localhost:5000/api/products";
+      
+      const method = isEditMode ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method: method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
@@ -106,15 +137,15 @@ const CreateProduct = () => {
                     index={index}
                   >
                     {(provided) => (
-                      <tr
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                      >
+                      <tr ref={provided.innerRef} {...provided.draggableProps}>
                         {/* Order Number */}
                         <td>{index + 1}</td>
 
                         {/* Drag Handle */}
-                        <td {...provided.dragHandleProps} style={{ cursor: "grab" }}>
+                        <td
+                          {...provided.dragHandleProps}
+                          style={{ cursor: "grab" }}
+                        >
                           ☰
                         </td>
 
@@ -122,26 +153,36 @@ const CreateProduct = () => {
                           <input
                             value={param.parameterName}
                             onChange={(e) =>
-                              handleChange(index, "parameterName", e.target.value)
+                              handleChange(
+                                index,
+                                "parameterName",
+                                e.target.value
+                              )
                             }
                           />
                         </td>
                         <td>
                           <input
                             value={param.max}
-                            onChange={(e) => handleChange(index, "max", e.target.value)}
+                            onChange={(e) =>
+                              handleChange(index, "max", e.target.value)
+                            }
                           />
                         </td>
                         <td>
                           <input
                             value={param.min}
-                            onChange={(e) => handleChange(index, "min", e.target.value)}
+                            onChange={(e) =>
+                              handleChange(index, "min", e.target.value)
+                            }
                           />
                         </td>
                         <td>
                           <input
                             value={param.unit}
-                            onChange={(e) => handleChange(index, "unit", e.target.value)}
+                            onChange={(e) =>
+                              handleChange(index, "unit", e.target.value)
+                            }
                           />
                         </td>
                         <td>
@@ -165,7 +206,11 @@ const CreateProduct = () => {
                             type="checkbox"
                             checked={param.compulsory}
                             onChange={(e) =>
-                              handleChange(index, "compulsory", e.target.checked)
+                              handleChange(
+                                index,
+                                "compulsory",
+                                e.target.checked
+                              )
                             }
                           />
                         </td>
@@ -183,7 +228,9 @@ const CreateProduct = () => {
                           </select>
                         </td>
                         <td>
-                          <button onClick={() => deleteParameter(index)}>🗑️</button>
+                          <button onClick={() => deleteParameter(index)}>
+                            🗑️
+                          </button>
                         </td>
                       </tr>
                     )}
@@ -200,9 +247,9 @@ const CreateProduct = () => {
         Save Values
       </button>
       <Link to="/parameters">
-          <button className="sb" onClick={submitProduct}>
-        Next
-      </button>
+        <button className="sb" onClick={submitProduct}>
+          Next
+        </button>
       </Link>
     </div>
   );
