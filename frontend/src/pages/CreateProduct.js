@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import "../styles/CreateProduct.css";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { Link } from "react-router-dom";
 
 const CreateProduct = () => {
   const [parameters, setParameters] = useState([]);
@@ -198,6 +199,11 @@ const CreateProduct = () => {
       <button className="sb" onClick={submitProduct}>
         Save Values
       </button>
+      <Link to="/parameters">
+          <button className="sb" onClick={submitProduct}>
+        Next
+      </button>
+      </Link>
     </div>
   );
 };
