@@ -48,3 +48,51 @@ export const createProduct = async (req, res) => {
     conn.release();
   }
 };
+
+export const updateProduct = async (req, res) => {
+  const { productId } = req.params;
+  const { name, parameters } = req.body;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // Update product name
+    await conn.query(
+      "UPDATE products SET name = ? WHERE id = ?",
+      [name, productId]
+    );
+
+    // Delete existing parameters
+    await conn.query("DELETE FROM parameters WHERE product_id = ?", [productId]);
+
+    // Insert new parameters
+    for (const param of parameters) {
+      await conn.query(
+        `INSERT INTO parameters 
+         (product_id, parameterName, max_value, min_value, unit, evaluation, sample_size, compulsory, status) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          productId,
+          param.parameterName,
+          param.max,
+          param.min,
+          param.unit,
+          param.evaluation,
+          param.sampleSize,
+          param.compulsory ? 1 : 0,
+          param.status,
+        ]
+      );
+    }
+
+    await conn.commit();
+    res.status(200).json({ message: "Product updated successfully" });
+  } catch (error) {
+    await conn.rollback();
+    console.error(error);
+    res.status(500).json({ error: "Failed to update product" });
+  } finally {
+    conn.release();
+  }
+};
