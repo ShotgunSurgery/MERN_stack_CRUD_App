@@ -44,11 +44,10 @@ const Home = () => {
             <th>Product Name</th>
             <th>Edit Parameters</th>
             <th>Edit Parameter Values</th>
-            <th>Delete Product</th>
           </tr>
         </thead>
         <tbody>
-          {products.map((p) => (
+        {products.map((p) => (
             <tr key={p.id}>
               <td>{p.name}</td>
               <td>
@@ -57,11 +56,11 @@ const Home = () => {
                 </button>
               </td>
               <td>
-                <button>Edit Parameter Values</button>
+                <button onClick={() => navigate("/parameters", { state: { productId: p.id } })}>
+                  Edit Parameter Values
+                </button>
               </td>
-              <td>
-                <button>Delete</button>
-              </td>
+              
             </tr>
           ))}
         </tbody>

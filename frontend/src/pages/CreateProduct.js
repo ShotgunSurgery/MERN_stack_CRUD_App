@@ -1,19 +1,20 @@
 import React, { useState } from "react";
 import "../styles/CreateProduct.css";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const CreateProduct = () => {
   const location = useLocation();
   const productData = location.state?.productData;
+  const navigate = useNavigate();
 
   const [productName, setProductName] = useState(
     productData ? productData.name : ""
   );
-  
+
   // Map database field names to frontend field names
   const mapParametersForFrontend = (dbParameters) => {
-    return dbParameters.map(param => ({
+    return dbParameters.map((param) => ({
       parameterName: param.parameterName,
       max: param.max_value || "", // Map max_value to max
       min: param.min_value || "", // Map min_value to min
@@ -28,8 +29,6 @@ const CreateProduct = () => {
   const [parameters, setParameters] = useState(
     productData ? mapParametersForFrontend(productData.parameters) : []
   );
-
-
 
   const deleteParameter = (index) => {
     const updated = [...parameters];
@@ -67,10 +66,10 @@ const CreateProduct = () => {
 
     try {
       const isEditMode = productData && productData.id;
-      const url = isEditMode 
+      const url = isEditMode
         ? `http://localhost:5000/api/products/${productData.id}`
         : "http://localhost:5000/api/products";
-      
+
       const method = isEditMode ? "PUT" : "POST";
 
       const response = await fetch(url, {
@@ -80,7 +79,12 @@ const CreateProduct = () => {
       });
 
       const result = await response.json();
-      console.log("Server response:", result);
+      //   console.log("Server response:", result);
+      // } catch (error) {
+      //   console.error("Error sending data:", error);
+      if (isEditMode) {
+        navigate("/parameters", { state: { productId: productData.id } });
+      }
     } catch (error) {
       console.error("Error sending data:", error);
     }
