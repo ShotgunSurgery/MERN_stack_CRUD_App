@@ -2,41 +2,97 @@ import React, { useEffect, useState } from "react";
 import "../styles/Home.css";
 import { Link, useNavigate } from "react-router-dom";
 
+const ExpandableRow = ({ product }) => {
+  return (
+    <tr className="expandable-row">
+      <td colSpan="5">
+        <div className="expandable-content">
+          <h3>Parameters</h3>
+          {product.parameters && product.parameters.length > 0 ? (
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Max Value</th>
+                  <th>Min Value</th>
+                  <th>Unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {product.parameters.map((param) => (
+                  <tr key={param.id}>
+                    <td>{param.parameterName}</td>
+                    <td>{param.max_value}</td>
+                    <td>{param.min_value}</td>
+                    <td>{param.unit}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>No parameters found.</p>
+          )}
+          <h3>Parameter Values</h3>
+          {product.parameterValues && product.parameterValues.length > 0 ? (
+            <table className="tbl">
+              <thead>
+                <tr>
+                  <th>Record Name</th>
+                  <th>Parameter Name</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {product.parameterValues.map((paramValue) => (
+                  <tr key={paramValue.id}>
+                    <td>{paramValue.record_name}</td>
+                    <td>{paramValue.parameter_name}</td>
+                    <td>{paramValue.value}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>No parameter values found.</p>
+          )}
+        </div>
+      </td>
+    </tr>
+  );
+};
+
 const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [productsPerPage] = useState(15);
-  const navigate = useNavigate(); // <-- for navigation with state
+  const [expandedProductId, setExpandedProductId] = useState(null);
+  const navigate = useNavigate();
 
-  // Fetch product + parameters and navigate to CreateProduct page
+  const handleToggleExpand = (productId) => {
+    setExpandedProductId(expandedProductId === productId ? null : productId);
+  };
+
   const fetchProductParams = async (productId) => {
     try {
       const res = await fetch(`http://localhost:5000/api/products/${productId}`);
       const data = await res.json();
-      console.log(data); // contains product + parameters
-
-      // Navigate to CreateProduct and pass data as state
       navigate("/createProduct", { state: { productData: data } });
     } catch (err) {
       console.error("Error fetching product parameters:", err);
     }
   };
 
-  // Delete product
   const deleteProduct = async (productId, productName) => {
     if (window.confirm(`Are you sure you want to delete "${productName}"?`)) {
       try {
         const res = await fetch(`http://localhost:5000/api/products/${productId}`, {
-          method: "DELETE"
+          method: "DELETE",
         });
-        
         if (res.ok) {
           alert("Product deleted successfully!");
-          // Refresh the products list
-          const updatedProducts = products.filter(p => p.id !== productId);
-          setProducts(updatedProducts);
+          setProducts(products.filter((p) => p.id !== productId));
         } else {
           const error = await res.json();
           alert("Error deleting product: " + (error.message || "Unknown error"));
@@ -48,7 +104,32 @@ const Home = () => {
     }
   };
 
-  // Pagination logic
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await fetch("http://localhost:5000/api/products/all-with-details");
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        const productsList = await res.json();
+        if (Array.isArray(productsList)) {
+          setProducts(productsList);
+        } else {
+          setError("Invalid data format received from server");
+          setProducts([]);
+        }
+      } catch (err) {
+        setError(err.message);
+        setProducts([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
+
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
@@ -70,81 +151,15 @@ const Home = () => {
     }
   };
 
-  // Reset to first page when products change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [products.length]);
-
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        // First get the list of all products
-        const res = await fetch("http://localhost:5000/api/products/allProducts");
-        
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        
-        const productsList = await res.json();
-        console.log("Raw API response:", productsList);
-        
-        // Ensure data is an array
-        if (Array.isArray(productsList)) {
-          // Now fetch complete data for each product including parameters
-          const productsWithParams = await Promise.all(
-            productsList.map(async (product) => {
-              try {
-                const productRes = await fetch(`http://localhost:5000/api/products/${product.id}`);
-                if (productRes.ok) {
-                  const productData = await productRes.json();
-                  return productData; // This includes the parameters
-                } else {
-                  console.warn(`Failed to fetch details for product ${product.id}`);
-                  return product; // Return basic product data if detailed fetch fails
-                }
-              } catch (err) {
-                console.warn(`Error fetching details for product ${product.id}:`, err);
-                return product; // Return basic product data if detailed fetch fails
-              }
-            })
-          );
-          
-          setProducts(productsWithParams);
-          console.log("products with parameters:", productsWithParams);
-        } else {
-          console.error("API returned non-array data:", productsList);
-          setError("Invalid data format received from server");
-          setProducts([]);
-        }
-      } catch (err) {
-        console.error("Error fetching products:", err);
-        setError(err.message);
-        setProducts([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchProducts();
-  }, []);
-
-  // Show loading state
   if (loading) {
-    return (
-      <div>
-        <h1 className="mainHead">Loading products...</h1>
-      </div>
-    );
+    return <div><h1 className="mainHead">Loading products...</h1></div>;
   }
 
-  // Show error state
   if (error) {
     return (
       <div>
         <h1 className="mainHead">Error Loading Products</h1>
-        <p style={{ color: 'red' }}>Error: {error}</p>
+        <p style={{ color: "red" }}>Error: {error}</p>
         <button onClick={() => window.location.reload()}>Retry</button>
       </div>
     );
@@ -153,71 +168,47 @@ const Home = () => {
   return (
     <div>
       <h1 className="mainHead">Existing Product</h1>
-
-      {products && products.length > 0 ? (
-        <table border="1" className="tbl">
+      {products.length > 0 ? (
+        <table className="tbl">
           <thead>
             <tr>
               <th>Product Name</th>
-              <th>Parameters</th>
-              <th>Edit Parameters</th>
-              <th>Edit Parameter Values</th>
-              <th>Delete Product</th>
+              <th>Details</th>
+              <th>Edit</th>
+              <th>Edit Values</th>
+              <th>Delete</th>
             </tr>
           </thead>
           <tbody>
             {currentProducts.map((p) => (
-              <tr key={p.id}>
-                <td>{p.name}</td>
-                <td>
-                  {p.parameters && p.parameters.length > 0 ? (
-                    <div>
-                      {p.parameters.map((param, index) => (
-                        <div key={index} style={{ marginBottom: '5px', padding: '3px', border: '1px solid #ddd', backgroundColor: '#f9f9f9' }}>
-                          <strong>{param.parameterName}</strong>
-                          <br />
-                          Max: {param.max_value || param.max || '-'} | 
-                          Min: {param.min_value || param.min || '-'} | 
-                          Unit: {param.unit || '-'} | 
-                          Sample: {param.sample_size || param.sampleSize || '-'} | 
-                          Compulsory: {param.compulsory === 1 || param.compulsory === true ? 'Yes' : 'No'} | 
-                          Status: {param.status || '-'}
-                          <br />
-                          <button 
-                            onClick={() => fetchProductParams(p.id)} 
-                            style={{ marginTop: '5px', padding: '2px 8px', fontSize: '12px' }}
-                          >
-                            EDIT
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <span>No parameters</span>
-                  )}
-                </td>
-                <td>
-                  <button onClick={() => fetchProductParams(p.id)}>
-                    Edit Parameters
-                  </button>
-                </td>
-                <td>
-                  <Link to={`/parameters/${p.id}`}>
-                    <button>Edit Parameter Values</button>
-                  </Link>
-                </td>
-                <td>
-                  <button onClick={() => deleteProduct(p.id, p.name)}>Delete</button>
-                </td>
-              </tr>
+              <React.Fragment key={p.id}>
+                <tr>
+                  <td>{p.name}</td>
+                  <td>
+                    <button onClick={() => handleToggleExpand(p.id)}>
+                      {expandedProductId === p.id ? "Collapse" : "View Details"}
+                    </button>
+                  </td>
+                  <td>
+                    <button onClick={() => fetchProductParams(p.id)}>Edit</button>
+                  </td>
+                  <td>
+                    <Link to={`/parameters/${p.id}`}>
+                      <button>Edit Values</button>
+                    </Link>
+                  </td>
+                  <td>
+                    <button onClick={() => deleteProduct(p.id, p.name)}>Delete</button>
+                  </td>
+                </tr>
+                {expandedProductId === p.id && <ExpandableRow product={p} />}
+              </React.Fragment>
             ))}
           </tbody>
         </table>
       ) : (
         <p>No products found.</p>
       )}
-
-      {/* Pagination Controls */}
       {products.length > productsPerPage && (
         <div style={{ marginTop: '20px', textAlign: 'center' }}>
           <div style={{ marginBottom: '10px' }}>
@@ -242,7 +233,6 @@ const Home = () => {
               Previous
             </button>
             
-            {/* Page numbers */}
             {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
               <button
                 key={pageNumber}
@@ -276,7 +266,6 @@ const Home = () => {
           </div>
         </div>
       )}
-
       <Link to="/createProduct">
         <button className="createNew">Create New +</button>
       </Link>

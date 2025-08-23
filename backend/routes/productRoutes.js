@@ -6,10 +6,13 @@ import {
   getProductValues,
 } from "../controllers/parameterController.js";
 import { allProducts } from "../controllers/allProducts.js";
+import { getAllProductsWithDetails } from "../controllers/detailedProducts.js";
 
 const router = express.Router();
 
 router.get("/allProducts", allProducts);
+
+router.get("/all-with-details", getAllProductsWithDetails);
 
 router.post("/", createProduct);
 
