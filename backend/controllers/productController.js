@@ -27,11 +27,11 @@ export const createProduct = async (req, res) => {
         [
           productId,
           param.parameterName,
-          param.max,
-          param.min,
+          param.max === '' ? null : param.max,
+          param.min === '' ? null : param.min,
           param.unit,
           param.evaluation,
-          param.sampleSize,
+          param.sampleSize === '' ? null : param.sampleSize,
           param.compulsory ? 1 : 0,
           param.status,
         ]
@@ -75,11 +75,11 @@ export const updateProduct = async (req, res) => {
         [
           productId,
           param.parameterName,
-          param.max,
-          param.min,
+          param.max === '' ? null : param.max,
+          param.min === '' ? null : param.min,
           param.unit,
           param.evaluation,
-          param.sampleSize,
+          param.sampleSize === '' ? null : param.sampleSize,
           param.compulsory ? 1 : 0,
           param.status,
         ]
@@ -92,6 +92,37 @@ export const updateProduct = async (req, res) => {
     await conn.rollback();
     console.error(error);
     res.status(500).json({ error: "Failed to update product" });
+  } finally {
+    conn.release();
+  }
+};
+
+export const deleteProduct = async (req, res) => {
+  const { productId } = req.params;
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    // Check if product exists
+    const [productRows] = await conn.query(
+      "SELECT * FROM products WHERE id = ?",
+      [productId]
+    );
+
+    if (productRows.length === 0) {
+      return res.status(404).json({ message: "Product not found" });
+    }
+
+    // Delete the product (parameters and values will be deleted automatically due to CASCADE)
+    await conn.query("DELETE FROM products WHERE id = ?", [productId]);
+
+    await conn.commit();
+    res.status(200).json({ message: "Product deleted successfully" });
+  } catch (error) {
+    await conn.rollback();
+    console.error("Error deleting product:", error);
+    res.status(500).json({ error: "Failed to delete product" });
   } finally {
     conn.release();
   }

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { useParams } from "react-router-dom";
 
-const ParameterValues = ({ productId }) => {
+const ParameterValues = () => {
+  const { productId } = useParams();
   const [parameters, setParameters] = useState([]);
   const [productName, setProductName] = useState("");
 
@@ -10,15 +12,35 @@ const ParameterValues = ({ productId }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
+        // Fetch product and parameters
         const res = await fetch(`http://localhost:5000/api/products/${productId}`);
         const data = await res.json();
         setProductName(data.name);
         setParameters(data.parameters || []);
+
+        // Fetch existing values
+        const valuesRes = await fetch(`http://localhost:5000/api/products/${productId}/values`);
+        const valuesData = await valuesRes.json();
+        
+        // Update parameters with existing values
+        if (valuesData.length > 0) {
+          const updatedParams = data.parameters.map(param => {
+            const existingValue = valuesData[0][param.parameterName];
+            return {
+              ...param,
+              value: existingValue || ''
+            };
+          });
+          setParameters(updatedParams);
+        }
       } catch (err) {
         console.error("Error fetching data:", err);
       }
     };
-    fetchData();
+    
+    if (productId) {
+      fetchData();
+    }
   }, [productId]);
 
   const onDragEnd = (result) => {
@@ -53,18 +75,26 @@ const ParameterValues = ({ productId }) => {
 
   const saveValues = async () => {
     try {
+      // Transform the data to match backend expectations
+      const rows = parameters.map(param => ({
+        name: `Record ${param.parameterName}`,
+        [param.parameterName]: param.value || ''
+      }));
+
       const res = await fetch(
         `http://localhost:5000/api/products/${productId}/values`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ parameters }),
+          body: JSON.stringify({ rows }),
         }
       );
       const result = await res.json();
       console.log("Saved:", result);
+      alert("Values saved successfully!");
     } catch (err) {
       console.error("Error saving values:", err);
+      alert("Error saving values: " + err.message);
     }
   };
 
