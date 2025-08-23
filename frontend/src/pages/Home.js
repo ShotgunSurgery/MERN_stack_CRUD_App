@@ -20,6 +20,30 @@ const Home = () => {
     }
   };
 
+  // Delete product
+  const deleteProduct = async (productId, productName) => {
+    if (window.confirm(`Are you sure you want to delete "${productName}"?`)) {
+      try {
+        const res = await fetch(`http://localhost:5000/api/products/${productId}`, {
+          method: "DELETE"
+        });
+        
+        if (res.ok) {
+          alert("Product deleted successfully!");
+          // Refresh the products list
+          const updatedProducts = products.filter(p => p.id !== productId);
+          setProducts(updatedProducts);
+        } else {
+          const error = await res.json();
+          alert("Error deleting product: " + (error.message || "Unknown error"));
+        }
+      } catch (err) {
+        console.error("Error deleting product:", err);
+        alert("Error deleting product: " + err.message);
+      }
+    }
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
@@ -27,6 +51,7 @@ const Home = () => {
         const data = await res.json();
         console.log(data);
         setProducts(data);
+        console.log("products state:", data);
       } catch (err) {
         console.error("Error fetching products:", err);
       }
@@ -57,10 +82,12 @@ const Home = () => {
                 </button>
               </td>
               <td>
-                <button>Edit Parameter Values</button>
+                <Link to={`/parameters/${p.id}`}>
+                  <button>Edit Parameter Values</button>
+                </Link>
               </td>
               <td>
-                <button>Delete</button>
+                <button onClick={() => deleteProduct(p.id, p.name)}>Delete</button>
               </td>
             </tr>
           ))}

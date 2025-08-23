@@ -1,5 +1,5 @@
 import express from "express";
-import { createProduct, updateProduct } from "../controllers/productController.js";
+import { createProduct, updateProduct, deleteProduct } from "../controllers/productController.js";
 import {
   getProductWithParameters,
   saveProductValues,
@@ -15,6 +15,9 @@ router.post("/", createProduct);
 
 // PUT route for updating products
 router.put("/:productId", updateProduct);
+
+// DELETE route for deleting products
+router.delete("/:productId", deleteProduct);
 
 // GET product with parameters
 router.get("/:productId", getProductWithParameters);
