@@ -6,8 +6,8 @@ export default function NavBar(){
       <h2 style={styles.logo}>MyApp</h2>
       <div style={styles.links}>
         <Link to="/" style={styles.link}>Home</Link>
-        <Link to="/about" style={styles.link}>About</Link>
-        <Link to="/contact" style={styles.link}>Contact</Link>
+        <Link to="/createProduct" style={styles.link}>Create Product</Link>
+        <Link to="/addStation" style={styles.link}>Add Station</Link>
       </div>
     </nav>
   );

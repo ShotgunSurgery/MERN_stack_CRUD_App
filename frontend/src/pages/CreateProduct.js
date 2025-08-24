@@ -79,14 +79,20 @@ const CreateProduct = () => {
       });
 
       const result = await response.json();
-      //   console.log("Server response:", result);
-      // } catch (error) {
-      //   console.error("Error sending data:", error);
-      if (isEditMode) {
-        navigate("/parameters", { state: { productId: productData.id } });
+      console.log("Server response:", result);
+      
+      if (response.ok) {
+        alert(productData && productData.id ? "Product updated successfully!" : "Product created successfully!");
+        if (!productData || !productData.id) {
+          // If creating new product, redirect to home
+          window.location.href = "/";
+        }
+      } else {
+        alert("Error: " + (result.error || "Failed to save product"));
       }
     } catch (error) {
       console.error("Error sending data:", error);
+      alert("Error: " + error.message);
     }
   };
 
@@ -248,13 +254,15 @@ const CreateProduct = () => {
       </DragDropContext>
 
       <button className="sb" onClick={submitProduct}>
-        Save Values
+        {productData && productData.id ? "Update Product" : "Create Product"}
       </button>
-      <Link to="/parameters">
-        <button className="sb" onClick={submitProduct}>
-          Next
-        </button>
-      </Link>
+      {productData && productData.id && (
+        <Link to={`/parameters/${productData.id}`}>
+          <button className="sb">
+            Manage Parameter Values
+          </button>
+        </Link>
+      )}
     </div>
   );
 };

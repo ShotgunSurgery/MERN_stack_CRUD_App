@@ -1,35 +1,42 @@
 import React, { useState, useEffect } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { useLocation } from "react-router-dom";
+import { useParams, useLocation } from "react-router-dom";
 
 const ParameterValues = () => {
+  const { productId } = useParams();
   const [parameters, setParameters] = useState([]);
   const [productName, setProductName] = useState("");
   const [rows, setRows] = useState([]); // Array of row objects, each containing values for all parameters
   const location = useLocation();
-  const productId = location.state?.productId;
+  // const productId = location.state?.productId;
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Fetch product and parameters
-        const res = await fetch(
-          `http://localhost:5000/api/products/${productId}`
-        );
+        const res = await fetch(`http://localhost:5000/api/products/${productId}`);
         const data = await res.json();
         setProductName(data.name);
         setParameters(data.parameters || []);
-        
-        // Fetch existing parameter values
-        const valuesRes = await fetch(
-          `http://localhost:5000/api/products/${productId}/values`
-        );
+
+        // Fetch existing values
+        const valuesRes = await fetch(`http://localhost:5000/api/products/${productId}/values`);
         const valuesData = await valuesRes.json();
         
+        // Transform existing values into rows format
         if (valuesData.length > 0) {
-          setRows(valuesData);
+          // Each item in valuesData represents a row with existing values
+          const existingRows = valuesData.map(rowData => {
+            const row = { name: rowData.name || "" };
+            // Add values for each parameter
+            data.parameters.forEach(param => {
+              row[param.parameterName] = rowData[param.parameterName] || "";
+            });
+            return row;
+          });
+          setRows(existingRows);
         } else {
-          // Initialize with one empty row if no existing values
+          // If no existing values, create one empty row
           setRows([createEmptyRow(data.parameters || [])]);
         }
       } catch (err) {
@@ -38,7 +45,10 @@ const ParameterValues = () => {
         setRows([createEmptyRow([])]);
       }
     };
-    fetchData();
+    
+    if (productId) {
+      fetchData();
+    }
   }, [productId]);
 
   // Create an empty row object with all parameter fields
@@ -76,18 +86,21 @@ const ParameterValues = () => {
 
   const saveValues = async () => {
     try {
+      // Use the actual rows state that contains user input
       const res = await fetch(
         `http://localhost:5000/api/products/${productId}/values`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rows, parameters }),
+          body: JSON.stringify({ rows: rows }), // Send the actual rows state
         }
       );
       const result = await res.json();
       console.log("Saved:", result);
+      alert("Values saved successfully!");
     } catch (err) {
       console.error("Error saving values:", err);
+      alert("Error saving values: " + err.message);
     }
   };
 

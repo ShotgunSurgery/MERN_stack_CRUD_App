@@ -6,8 +6,8 @@ import NavBar from "./components/NavBar";
 
 import Home from '../src/pages/Home';
 import CreateProduct from "./pages/CreateProduct";
-import Parameters from "./pages/ParameterValues";
 import ParameterValues from "./pages/ParameterValues";
+import AddStation from "./pages/AddStation";
 
 function App() {
   return (
@@ -16,7 +16,8 @@ function App() {
       <Routes>
         <Route path="/" element={<Home/>}></Route>
         <Route path="/createProduct" element={<CreateProduct/>}></Route>
-        <Route path="/parameters" element={<ParameterValues/>}></Route>
+        <Route path="/parameters/:productId" element={<ParameterValues/>}></Route>
+        <Route path="/addStation" element={<AddStation/>}></Route>
       </Routes>
     </Router>
   );

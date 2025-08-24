@@ -33,10 +33,12 @@ export const getProductWithParameters = async (req, res) => {
 // SAVE parameter values
 export const saveProductValues = async (req, res) => {
   const { productId } = req.params;
-  const { rows } = req.body; // Changed from 'parameters' to 'rows'
+  const { rows } = req.body;
+
+  console.log("Received data:", { productId, rows });
 
   try {
-    // First, delete existing values for this product (optional - you might want to keep them)
+    // First, delete existing values for this product
     await pool.query("DELETE FROM parameter_values WHERE product_id = ?", [productId]);
 
     // Insert new values for each row
@@ -46,6 +48,7 @@ export const saveProductValues = async (req, res) => {
       // Insert values for each parameter in this row
       for (const paramName in row) {
         if (paramName !== 'name' && row[paramName] !== '') {
+          console.log(`Inserting: productId=${productId}, recordName=${recordName}, paramName=${paramName}, value=${row[paramName]}`);
           await pool.query(
             `INSERT INTO parameter_values (product_id, record_name, parameter_name, value)
              VALUES (?, ?, ?, ?)`,
@@ -55,10 +58,10 @@ export const saveProductValues = async (req, res) => {
       }
     }
 
-    res.json({ message: "Values saved successfully" });
+    res.json({ message: "Values saved successfully", savedRows: rows.length });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Server error" });
+    console.error("Error saving parameter values:", err);
+    res.status(500).json({ message: "Server error", error: err.message });
   }
 };
 

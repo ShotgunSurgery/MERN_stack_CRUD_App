@@ -16,3 +16,11 @@
   margin-left: 20px;
   margin-bottom: 15px;
 }
+
+.expandable-row {
+  background-color: #f9f9f9;
+}
+
+.expandable-content {
+  padding: 15px;
+}
