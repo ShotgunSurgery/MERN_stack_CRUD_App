@@ -1,5 +1,5 @@
 import express from "express";
-import { createProduct, updateProduct, deleteProduct } from "../controllers/productController.js";
+import { createProduct, updateProduct, deleteProduct, reorderProducts } from "../controllers/productController.js";
 import {
   getProductWithParameters,
   saveProductValues,
@@ -16,6 +16,8 @@ router.get("/all-with-details", getAllProductsWithDetails);
 
 router.post("/", createProduct);
 
+router.put("/reorder", reorderProducts);
+
 // PUT route for updating products
 router.put("/:productId", updateProduct);
 
@@ -30,5 +32,7 @@ router.get("/:productId/values", getProductValues);
 
 // POST save parameter values
 router.post("/:productId/values", saveProductValues);
+
+router.put("/reorder", reorderProducts);
 
 export default router;
