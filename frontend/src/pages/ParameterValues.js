@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from "react";
+import "../styles/shared.css";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 
 const ParameterValues = () => {
   const { productId } = useParams();
+  const navigate = useNavigate();
   const [parameters, setParameters] = useState([]);
   const [productName, setProductName] = useState("");
 
@@ -92,6 +94,7 @@ const ParameterValues = () => {
       const result = await res.json();
       console.log("Saved:", result);
       alert("Values saved successfully!");
+      navigate("/");
     } catch (err) {
       console.error("Error saving values:", err);
       alert("Error saving values: " + err.message);
@@ -99,9 +102,14 @@ const ParameterValues = () => {
   };
 
   return (
-    <div>
-      <h1 className="mainhead">{productName}</h1>
-      <button onClick={addRow}>Add Row</button>
+    <div className="container">
+      <div className="header">
+        <h1 className="mainhead">{productName}</h1>
+        <div>
+          <button className="btn btn-primary" onClick={addRow}>Add Row</button>
+          <button className="btn btn-primary" onClick={saveValues}>Save Values</button>
+        </div>
+      </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
         <Droppable droppableId="parameters">
@@ -112,7 +120,7 @@ const ParameterValues = () => {
               ref={provided.innerRef}
             >
               <thead>
-                <tr style={{ border: "solid black" }}>
+                <tr>
                   <td>#</td>
                   <td>Drag</td>
                   <td>Parameter Name</td>
@@ -160,7 +168,7 @@ const ParameterValues = () => {
 
                         {/* Delete row */}
                         <td>
-                          <button onClick={() => deleteRow(index)}>🗑️</button>
+                          <button className="btn btn-danger" onClick={() => deleteRow(index)}>🗑️</button>
                         </td>
                       </tr>
                     )}
@@ -172,8 +180,6 @@ const ParameterValues = () => {
           )}
         </Droppable>
       </DragDropContext>
-
-      <button onClick={saveValues}>Save Values</button>
     </div>
   );
 };

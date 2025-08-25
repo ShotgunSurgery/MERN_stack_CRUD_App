@@ -2,7 +2,18 @@ import db from "../config/db.js";
 
 export const getAllProductsWithDetails = async (req, res) => {
   try {
-    const [products] = await db.query("SELECT * FROM products");
+    const { search } = req.query;
+    let query = "SELECT * FROM products";
+    const queryParams = [];
+
+    if (search) {
+      query += " WHERE name LIKE ?";
+      queryParams.push(`%${search}%`);
+    }
+
+    query += " ORDER BY display_order ASC";
+
+    const [products] = await db.query(query, queryParams);
 
     for (const product of products) {
       const [parameters] = await db.query(
@@ -20,6 +31,6 @@ export const getAllProductsWithDetails = async (req, res) => {
     res.json(products);
   } catch (err) {
     console.error("Error fetching products with details:", err);
-    res.status(500).json({ error: "Failed to fetch products with details" });
+    res.status(500).json({ error: "Failed to fetch products with details", details: err.message });
   }
 };
