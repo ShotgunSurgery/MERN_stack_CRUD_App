@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 export default function NavBar(){
      return (
     <nav style={styles.nav}>
-      <h2 style={styles.logo}>MyApp</h2>
+      <h2 style={styles.logo}>Windals Precision Pvt. Ltd. </h2>
       <div style={styles.links}>
         <Link to="/" style={styles.link}>Home</Link>
         <Link to="/createProduct" style={styles.link}>Create Product</Link>

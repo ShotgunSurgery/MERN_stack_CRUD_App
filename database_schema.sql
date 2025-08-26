@@ -38,3 +38,16 @@ CREATE TABLE parameter_values (
     CONSTRAINT fk_paramvalues_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
 );
 
+-- Stations table
+CREATE TABLE stations (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    product_name VARCHAR(255) NOT NULL,
+    station_number INT NOT NULL,
+    station_name VARCHAR(255) NOT NULL,
+    cycle_time INT NOT NULL,
+    daily_count INT NOT NULL,
+    products_per_hour INT NOT NULL,
+    report_type ENUM('Done', 'Pending', 'In process') NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
