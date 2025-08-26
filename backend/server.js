@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import db from "./config/db.js";
 import productRoutes from "../backend/routes/productRoutes.js"
+import stationRoutes from "./routes/stationRoutes.js";
 
 dotenv.config();
 
@@ -69,6 +70,7 @@ app.get("/api/db-test", async (req, res) => {
 
 // Mount product routes -> the below is the base route
 app.use("/api/products", productRoutes); 
+app.use("/api/stations", stationRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

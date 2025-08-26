@@ -7,6 +7,7 @@ export default function NavBar(){
       <div style={styles.links}>
         <Link to="/" style={styles.link}>Home</Link>
         <Link to="/createProduct" style={styles.link}>Create Product</Link>
+        <Link to="/addStation" style={styles.link}>Add Station</Link>
       </div>
     </nav>
   );
