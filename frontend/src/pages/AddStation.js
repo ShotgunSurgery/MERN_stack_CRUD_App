@@ -2,12 +2,12 @@ import React, { useEffect, useState } from "react";
 import "../styles/AddStation.css";
 
 const AddStation = () => {
-  const [products, setProducts] = useState([]);    
+  const [products, setProducts] = useState([]);
   const [parameters, setParameters] = useState([]);
-  const [error, setError] = useState(null);        
-  const [search, setSearch] = useState("");        
-  const [selected, setSelected] = useState("");    
-  const [open, setOpen] = useState(false);         
+  const [error, setError] = useState(null);
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState("");
+  const [open, setOpen] = useState(false);
   const [Typeselected, setTypeSelected] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [stations, setStations] = useState([]);
@@ -20,6 +20,10 @@ const AddStation = () => {
   const [cycleTime, setCycleTime] = useState("");
   const [dailyCount, setDailyCount] = useState("");
   const [productsPerHour, setProductsPerHour] = useState("");
+  const [isChecked, setIsChecked] = useState(false);
+  const [rows, setRows] = useState([
+    { id: 1, machine: "", cycleTime: "", dailyCount: "", perHour: "" },
+  ]);
 
   useEffect(() => {
     const fetchAllProducts = async () => {
@@ -50,15 +54,21 @@ const AddStation = () => {
       try {
         console.log("Fetching parameters...");
         setParametersDebug("Fetching parameters...");
-        
-        const res = await fetch("http://localhost:5000/api/stations/parameters");
+
+        const res = await fetch(
+          "http://localhost:5000/api/stations/parameters"
+        );
         console.log("Parameters response status:", res.status);
         setParametersDebug(`Response status: ${res.status}`);
-        
+
         if (res.ok) {
           const paramsList = await res.json();
           console.log("Received parameters:", paramsList);
-          setParametersDebug(`Received ${paramsList.length} parameters: ${JSON.stringify(paramsList)}`);
+          setParametersDebug(
+            `Received ${paramsList.length} parameters: ${JSON.stringify(
+              paramsList
+            )}`
+          );
           setParameters(paramsList);
         } else {
           const errorText = await res.text();
@@ -85,33 +95,118 @@ const AddStation = () => {
     }
   }, [selected]);
 
+  const handleCheckBox = (event) => {
+    const checked = event.target.checked;
+    setIsChecked(checked);
+
+    if (checked) {
+      console.log("Checkbox is checked");
+    } else {
+      console.log("Checkbox is unchecked");
+    }
+  };
+
+  const handleAddRow = () => {
+    const newId = rows.length + 1;
+    const newRow = {
+      id: newId,
+      machine: "",
+      cycleTime: "",
+      dailyCount: "",
+      perHour: "",
+    };
+    setRows([...rows, newRow]);
+  };
+
+  const handleInputChange = (id, field, value) => {
+    const updatedRows = rows.map((row) =>
+      row.id === id ? { ...row, [field]: value } : row
+    );
+    setRows(updatedRows);
+  };
+
+  const handleDeleteRow = async (id) => {
+    const row = rows.find((r) => r.id === id);
+    if (!row) return;
+
+    try {
+      // Delete from backend first (by product_name + machine_name)
+      const res = await fetch("http://localhost:5000/api/machines", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          product_name: selected,
+          machine_name: row.machine,
+        }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Failed to delete machine:", res.status, text);
+        alert("Failed to delete machine from server.");
+        return;
+      }
+
+      // Remove locally after server confirms
+      const updated = rows.filter((r) => r.id !== id);
+      setRows(updated);
+    } catch (e) {
+      console.error("Error deleting machine:", e);
+      alert("Error deleting machine.");
+    }
+  };
+
+  const submitMachines = async (productIdentifier) => {
+    try {
+      // send all rows with product_id to backend
+      const response = await fetch("http://localhost:5000/api/machines", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          // Backend accepts either product_id or product_name; we send selected product name
+          product_name: productIdentifier,
+          machines: rows, // rows = your table data [{ machine, cycleTime, dailyCount, perHour }]
+        }),
+      });
+
+      const data = await response.json();
+      console.log("Machines saved:", data);
+    } catch (error) {
+      console.error("Error submitting machines:", error);
+    }
+  };
+
   const fetchStationsByProduct = async (productName) => {
     console.log("Starting to fetch stations for:", productName);
     setLoadingStations(true);
     setStations([]);
     setDebugInfo(`Fetching stations for: ${productName}`);
-    
+
     try {
-      const url = `http://localhost:5000/api/stations/by-product/${encodeURIComponent(productName)}`;
+      const url = `http://localhost:5000/api/stations/by-product/${encodeURIComponent(
+        productName
+      )}`;
       console.log("Fetching from URL:", url);
       setDebugInfo(`Fetching from: ${url}`);
-      
+
       const res = await fetch(url);
       console.log("Response status:", res.status);
       console.log("Response ok:", res.ok);
       setDebugInfo(`Response status: ${res.status}`);
-      
+
       if (!res.ok) {
         const errorText = await res.text();
         console.error("Error response:", errorText);
         setDebugInfo(`Error: ${res.status} - ${errorText}`);
         throw new Error(`HTTP error! status: ${res.status}`);
       }
-      
+
       const stationsList = await res.json();
       console.log("Received stations data:", stationsList);
       setDebugInfo(`Received ${stationsList.length} stations`);
-      
+
       if (Array.isArray(stationsList)) {
         setStations(stationsList);
         console.log(`Successfully set ${stationsList.length} stations`);
@@ -137,17 +232,25 @@ const AddStation = () => {
     p.toLowerCase().includes(search.toLowerCase())
   );
 
-const handleSave = async () => {
-  // Validate required fields
-  if (!selected || !stationNumber || !stationName || !cycleTime || !dailyCount || !productsPerHour || !Typeselected) {
-    alert("Please fill in all fields before saving!");
-    return;
-  }
+  const handleSave = async () => {
+    // Validate required fields
+    if (
+      !selected ||
+      !stationNumber ||
+      !stationName ||
+      !cycleTime ||
+      !dailyCount ||
+      !productsPerHour ||
+      !Typeselected
+    ) {
+      alert("Please fill in all fields before saving!");
+      return;
+    }
 
     setIsLoading(true);
     setError(null);
 
-  const stationData = {
+    const stationData = {
       product_name: selected,
       station_number: parseInt(stationNumber),
       station_name: stationName,
@@ -155,46 +258,47 @@ const handleSave = async () => {
       daily_count: parseInt(dailyCount),
       products_per_hour: parseInt(productsPerHour),
       report_type: Typeselected,
-      parameters: null // Will be updated when parameters are selected
-  };
+      parameters: null, // Will be updated when parameters are selected
+    };
 
-  try {
+    try {
       console.log("Sending station data:", stationData);
-      
-    const res = await fetch("http://localhost:5000/api/stations", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(stationData),
-    });
+
+      const res = await fetch("http://localhost:5000/api/stations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(stationData),
+      });
 
       console.log("Response status:", res.status);
 
       if (!res.ok) {
         const errorData = await res.text();
         console.error("Error response:", errorData);
-        throw new Error(`Failed to save station: ${res.status} ${res.statusText}`);
+        throw new Error(
+          `Failed to save station: ${res.status} ${res.statusText}`
+        );
       }
 
-    const result = await res.json();
+      const result = await res.json();
       console.log("Success response:", result);
-      
-    alert("Station saved successfully!");
-      
+
+      alert("Station saved successfully!");
+
       // Refresh stations list after successful save
       await fetchStationsByProduct(selected);
-    
+
       // Clear form after successful save (but keep selected product)
-    setStationNumber("");
-    setStationName("");
-    setCycleTime("");
-    setDailyCount("");
-    setProductsPerHour("");
-    setTypeSelected("");
-    
-  } catch (err) {
+      setStationNumber("");
+      setStationName("");
+      setCycleTime("");
+      setDailyCount("");
+      setProductsPerHour("");
+      setTypeSelected("");
+    } catch (err) {
       console.error("Error saving station:", err);
       setError(err.message);
-    alert("Error: " + err.message);
+      alert("Error: " + err.message);
     } finally {
       setIsLoading(false);
     }
@@ -205,7 +309,7 @@ const handleSave = async () => {
     e.dataTransfer.setData("text/plain", index);
     e.dataTransfer.effectAllowed = "move";
     console.log("Drag started for index:", index);
-    
+
     // Visual feedback
     e.target.style.cursor = "grabbing";
     e.target.style.opacity = "0.5";
@@ -219,9 +323,9 @@ const handleSave = async () => {
   const handleDrop = async (e, dropIndex) => {
     e.preventDefault();
     const dragIndex = parseInt(e.dataTransfer.getData("text/plain"));
-    
+
     console.log("Drop event:", { dragIndex, dropIndex });
-    
+
     if (dragIndex === dropIndex) {
       console.log("Same index, no change needed");
       return;
@@ -230,7 +334,7 @@ const handleSave = async () => {
     // Create new array with reordered stations
     const newStations = [...stations];
     const draggedStation = newStations[dragIndex];
-    
+
     // Remove from old position
     newStations.splice(dragIndex, 1);
     // Insert at new position
@@ -239,10 +343,13 @@ const handleSave = async () => {
     // Update station numbers based on new order (starting from 1)
     const updatedStations = newStations.map((station, index) => ({
       ...station,
-      station_number: index + 1
+      station_number: index + 1,
     }));
 
-    console.log("Updated stations order:", updatedStations.map(s => ({ id: s.id, number: s.station_number })));
+    console.log(
+      "Updated stations order:",
+      updatedStations.map((s) => ({ id: s.id, number: s.station_number }))
+    );
 
     // Update local state immediately for smooth UX
     setStations(updatedStations);
@@ -253,7 +360,7 @@ const handleSave = async () => {
       const res = await fetch("http://localhost:5000/api/stations/order", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stations: updatedStations })
+        body: JSON.stringify({ stations: updatedStations }),
       });
 
       if (res.ok) {
@@ -284,30 +391,40 @@ const handleSave = async () => {
   const handleParameterToggle = async (stationId, parameterName) => {
     try {
       // Find the parameter ID by name
-      const parameter = parameters.find(p => p.name === parameterName);
+      const parameter = parameters.find((p) => p.name === parameterName);
       if (!parameter) {
         console.error("Parameter not found:", parameterName);
         return;
       }
 
       // Check if parameter is already assigned
-      const station = stations.find(s => s.id === stationId);
-      const isAssigned = station.parameters && station.parameters.some(p => p.id === parameter.id);
+      const station = stations.find((s) => s.id === stationId);
+      const isAssigned =
+        station.parameters &&
+        station.parameters.some((p) => p.id === parameter.id);
 
       if (isAssigned) {
         // Remove parameter
-        console.log("Removing parameter:", parameterName, "from station:", stationId);
-        const res = await fetch(`http://localhost:5000/api/stations/${stationId}/parameters/${parameter.id}`, {
-          method: "DELETE"
-        });
+        console.log(
+          "Removing parameter:",
+          parameterName,
+          "from station:",
+          stationId
+        );
+        const res = await fetch(
+          `http://localhost:5000/api/stations/${stationId}/parameters/${parameter.id}`,
+          {
+            method: "DELETE",
+          }
+        );
 
         if (res.ok) {
           // Update local state
-          const updatedStations = stations.map(s => {
+          const updatedStations = stations.map((s) => {
             if (s.id === stationId) {
               return {
                 ...s,
-                parameters: s.parameters.filter(p => p.id !== parameter.id)
+                parameters: s.parameters.filter((p) => p.id !== parameter.id),
               };
             }
             return s;
@@ -317,19 +434,27 @@ const handleSave = async () => {
         }
       } else {
         // Add parameter
-        console.log("Adding parameter:", parameterName, "to station:", stationId);
-        const res = await fetch(`http://localhost:5000/api/stations/${stationId}/parameters/${parameter.id}`, {
-          method: "POST"
-        });
+        console.log(
+          "Adding parameter:",
+          parameterName,
+          "to station:",
+          stationId
+        );
+        const res = await fetch(
+          `http://localhost:5000/api/stations/${stationId}/parameters/${parameter.id}`,
+          {
+            method: "POST",
+          }
+        );
 
         if (res.ok) {
           // Update local state
-          const updatedStations = stations.map(s => {
+          const updatedStations = stations.map((s) => {
             if (s.id === stationId) {
               const currentParams = s.parameters || [];
               return {
                 ...s,
-                parameters: [...currentParams, parameter]
+                parameters: [...currentParams, parameter],
               };
             }
             return s;
@@ -410,7 +535,7 @@ const handleSave = async () => {
               background: "white",
               borderRadius: "4px",
               zIndex: 1000,
-              boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
+              boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
             }}
           >
             {filteredProducts.length > 0 ? (
@@ -423,20 +548,23 @@ const handleSave = async () => {
                     cursor: "pointer",
                     borderBottom: "1px solid #eee",
                     backgroundColor: selected === product ? "#e3f2fd" : "white",
-                    fontWeight: selected === product ? "bold" : "normal"
+                    fontWeight: selected === product ? "bold" : "normal",
                   }}
                   onMouseEnter={(e) => {
                     e.target.style.backgroundColor = "#f5f5f5";
                   }}
                   onMouseLeave={(e) => {
-                    e.target.style.backgroundColor = selected === product ? "#e3f2fd" : "white";
+                    e.target.style.backgroundColor =
+                      selected === product ? "#e3f2fd" : "white";
                   }}
                 >
                   {product}
                 </li>
               ))
             ) : (
-              <li style={{ padding: "10px", color: "#888", fontStyle: "italic" }}>
+              <li
+                style={{ padding: "10px", color: "#888", fontStyle: "italic" }}
+              >
                 {search ? "No products found" : "No products available"}
               </li>
             )}
@@ -446,13 +574,15 @@ const handleSave = async () => {
 
       {error && <p style={{ color: "red" }}>{error}</p>}
       {selected && (
-        <div style={{ 
-          marginTop: "10px", 
-          padding: "8px", 
-          backgroundColor: "#e8f5e8", 
-          borderRadius: "4px",
-          border: "1px solid #4caf50"
-        }}>
+        <div
+          style={{
+            marginTop: "10px",
+            padding: "8px",
+            backgroundColor: "#e8f5e8",
+            borderRadius: "4px",
+            border: "1px solid #4caf50",
+          }}
+        >
           <strong>Selected Product:</strong> {selected}
         </div>
       )}
@@ -505,26 +635,130 @@ const handleSave = async () => {
       </div>
 
       {/* Save button */}
-      <button 
-        onClick={handleSave} 
+      <button
+        onClick={handleSave}
         disabled={isLoading}
         style={{
           opacity: isLoading ? 0.6 : 1,
-          cursor: isLoading ? 'not-allowed' : 'pointer'
+          cursor: isLoading ? "not-allowed" : "pointer",
         }}
       >
-        {isLoading ? 'Saving...' : 'Save Station'}
+        {isLoading ? "Saving..." : "Save Station"}
       </button>
-      
+
+      {/* checkbox for multiple machines */}
+
+      <div className="p-4">
+        <label className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            onChange={handleCheckBox}
+            checked={isChecked}
+            className="w-4 h-4"
+          />
+          <span>Multiple Machines</span>
+        </label>
+
+        {/* here react checks if ischecked if true then then renders the front if false
+        then the && condition gets falsed and nothing is rendered */}
+        {isChecked && (
+          <div className="mt-4 space-y-4">
+            <table className="border border-gray-400 w-full text-left">
+              <thead>
+                <tr className="bg-gray-200">
+                  <th className="border p-2">Machine Name</th>
+                  <th className="border p-2">Cycle Time</th>
+                  <th className="border p-2">Daily Count</th>
+                  <th className="border p-2">Product Per hour</th>
+                  <th className="border p-2">Delete</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id}>
+                    <td className="border p-2">
+                      <input
+                        type="text"
+                        value={row.machine}
+                        onChange={(e) =>
+                          handleInputChange(row.id, "machine", e.target.value)
+                        }
+                        className="border p-1 w-full"
+                        placeholder="Enter machine name"
+                      />
+                    </td>
+                    <td className="border p-2">
+                      <input
+                        type="number"
+                        value={row.cycleTime}
+                        onChange={(e) =>
+                          handleInputChange(row.id, "cycleTime", e.target.value)
+                        }
+                        className="border p-1 w-full"
+                        placeholder="Cycle time"
+                      />
+                    </td>
+                    <td className="border p-2">
+                      <input
+                        type="number"
+                        value={row.dailyCount}
+                        onChange={(e) =>
+                          handleInputChange(
+                            row.id,
+                            "dailyCount",
+                            e.target.value
+                          )
+                        }
+                        className="border p-1 w-full"
+                        placeholder="Daily count"
+                      />
+                    </td>
+                    <td className="border p-2">
+                      <input
+                        type="number"
+                        value={row.perHour}
+                        onChange={(e) =>
+                          handleInputChange(row.id, "perHour", e.target.value)
+                        }
+                        className="border p-1 w-full"
+                        placeholder="Products/hour"
+                      />
+                    </td>
+                    <td className="border p-2">
+                      <button
+                        className="px-3 py-1 bg-red-500 text-white rounded"
+                        onClick={() => handleDeleteRow(row.id)}
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <button
+              onClick={handleAddRow}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow"
+            >
+              Add Machine
+            </button>
+            <button onClick={() => submitMachines(selected)}>Save Machines</button>
+          </div>
+        )}
+      </div>
+
       {error && (
-        <div style={{ 
-          color: 'red', 
-          marginTop: '10px', 
-          padding: '10px', 
-          backgroundColor: '#ffe6e6', 
-          borderRadius: '4px',
-          border: '1px solid #ff9999'
-        }}>
+        <div
+          style={{
+            color: "red",
+            marginTop: "10px",
+            padding: "10px",
+            backgroundColor: "#ffe6e6",
+            borderRadius: "4px",
+            border: "1px solid #ff9999",
+          }}
+        >
           Error: {error}
         </div>
       )}
@@ -581,31 +815,106 @@ const handleSave = async () => {
             </div>
           ) : stations.length > 0 ? (
             <div style={{ overflowX: "auto" }}>
-              <table style={{
-                width: "100%",
-                borderCollapse: "collapse",
-                border: "1px solid #ddd",
-                marginTop: "10px"
-              }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  border: "1px solid #ddd",
+                  marginTop: "10px",
+                }}
+              >
                 <thead>
                   <tr style={{ backgroundColor: "#f2f2f2" }}>
-                    <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "center", width: "50px" }}>⋮⋮</th>
-                    <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "left" }}>Station #</th>
-                    <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "left" }}>Station Name</th>
-                    <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "left" }}>Cycle Time</th>
-                    <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "left" }}>Daily Count</th>
-                    <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "left" }}>Products/Hour</th>
-                    <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "left" }}>Report Type</th>
-                    <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "left" }}>Parameters</th>
-                    <th style={{ padding: "12px", border: "1px solid #ddd", textAlign: "left" }}>Created At</th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        border: "1px solid #ddd",
+                        textAlign: "center",
+                        width: "50px",
+                      }}
+                    >
+                      ⋮⋮
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        border: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      Station #
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        border: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      Station Name
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        border: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      Cycle Time
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        border: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      Daily Count
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        border: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      Products/Hour
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        border: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      Report Type
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        border: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      Parameters
+                    </th>
+                    <th
+                      style={{
+                        padding: "12px",
+                        border: "1px solid #ddd",
+                        textAlign: "left",
+                      }}
+                    >
+                      Created At
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {stations.map((station, index) => (
-                    <tr 
-                      key={station.id || index} 
-                      style={{ 
-                        backgroundColor: index % 2 === 0 ? "#f9f9f9" : "white"
+                    <tr
+                      key={station.id || index}
+                      style={{
+                        backgroundColor: index % 2 === 0 ? "#f9f9f9" : "white",
                       }}
                       draggable={true}
                       onDragStart={(e) => handleDragStart(e, index)}
@@ -613,33 +922,46 @@ const handleSave = async () => {
                       onDrop={(e) => handleDrop(e, index)}
                       onDragEnd={handleDragEnd}
                     >
-                      <td style={{ 
-                        padding: "12px", 
-                        border: "1px solid #ddd", 
-                        textAlign: "center",
-                        cursor: "grab",
-                        fontSize: "18px",
-                        userSelect: "none"
-                      }}
-                      onDragStart={(e) => {
-                        e.target.style.cursor = "grabbing";
-                        e.target.style.opacity = "0.5";
-                      }}
-                      onDragEnd={(e) => {
-                        e.target.style.cursor = "grab";
-                        e.target.style.opacity = "1";
-                      }}
+                      <td
+                        style={{
+                          padding: "12px",
+                          border: "1px solid #ddd",
+                          textAlign: "center",
+                          cursor: "grab",
+                          fontSize: "18px",
+                          userSelect: "none",
+                        }}
+                        onDragStart={(e) => {
+                          e.target.style.cursor = "grabbing";
+                          e.target.style.opacity = "0.5";
+                        }}
+                        onDragEnd={(e) => {
+                          e.target.style.cursor = "grab";
+                          e.target.style.opacity = "1";
+                        }}
                       >
                         ⋮⋮
                       </td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>{station.station_number}</td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>{station.station_name}</td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>{station.cycle_time}</td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>{station.daily_count}</td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>{station.products_per_hour}</td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>{station.report_type}</td>
                       <td style={{ padding: "12px", border: "1px solid #ddd" }}>
-                        <ParameterSelector 
+                        {station.station_number}
+                      </td>
+                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
+                        {station.station_name}
+                      </td>
+                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
+                        {station.cycle_time}
+                      </td>
+                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
+                        {station.daily_count}
+                      </td>
+                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
+                        {station.products_per_hour}
+                      </td>
+                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
+                        {station.report_type}
+                      </td>
+                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
+                        <ParameterSelector
                           station={station}
                           parameters={parameters}
                           onParameterToggle={handleParameterToggle}
@@ -652,17 +974,21 @@ const handleSave = async () => {
                   ))}
                 </tbody>
               </table>
-              <p style={{ 
-                marginTop: "10px", 
-                fontSize: "14px", 
-                color: "#666", 
-                fontStyle: "italic" 
-              }}>
+              <p
+                style={{
+                  marginTop: "10px",
+                  fontSize: "14px",
+                  color: "#666",
+                  fontStyle: "italic",
+                }}
+              >
                 🖱️ Drag and drop rows to reorder stations
               </p>
             </div>
           ) : (
-            <p style={{ color: "#666", fontStyle: "italic" }}>No stations found for this product.</p>
+            <p style={{ color: "#666", fontStyle: "italic" }}>
+              No stations found for this product.
+            </p>
           )}
         </div>
       )}
@@ -674,12 +1000,12 @@ const handleSave = async () => {
 const ParameterSelector = ({ station, parameters, onParameterToggle }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   // Get current parameters for this station
   const currentParams = station.parameters || [];
-  
+
   // Filter parameters based on search
-  const filteredParameters = parameters.filter(param =>
+  const filteredParameters = parameters.filter((param) =>
     param.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -690,18 +1016,18 @@ const ParameterSelector = ({ station, parameters, onParameterToggle }) => {
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isOpen && !event.target.closest('.parameter-selector')) {
+      if (isOpen && !event.target.closest(".parameter-selector")) {
         setIsOpen(false);
       }
     };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [isOpen]);
 
   return (
     <div className="parameter-selector" style={{ position: "relative" }}>
-      <div 
+      <div
         onClick={() => {
           console.log("Opening parameter selector for station:", station.id);
           setIsOpen(!isOpen);
@@ -713,12 +1039,15 @@ const ParameterSelector = ({ station, parameters, onParameterToggle }) => {
           cursor: "pointer",
           backgroundColor: "#f9f9f9",
           minHeight: "20px",
-          fontSize: "12px"
+          fontSize: "12px",
         }}
       >
         {currentParams.length > 0 ? (
           <div>
-            {currentParams.slice(0, 2).map(p => p.name).join(", ")}
+            {currentParams
+              .slice(0, 2)
+              .map((p) => p.name)
+              .join(", ")}
             {currentParams.length > 2 && ` +${currentParams.length - 2} more`}
           </div>
         ) : (
@@ -727,18 +1056,20 @@ const ParameterSelector = ({ station, parameters, onParameterToggle }) => {
       </div>
 
       {isOpen && (
-        <div style={{
-          position: "absolute",
-          top: "100%",
-          left: 0,
-          width: "300px",
-          maxHeight: "200px",
-          backgroundColor: "white",
-          border: "1px solid #ddd",
-          borderRadius: "4px",
-          zIndex: 1000,
-          boxShadow: "0 2px 10px rgba(0,0,0,0.1)"
-        }}>
+        <div
+          style={{
+            position: "absolute",
+            top: "100%",
+            left: 0,
+            width: "300px",
+            maxHeight: "200px",
+            backgroundColor: "white",
+            border: "1px solid #ddd",
+            borderRadius: "4px",
+            zIndex: 1000,
+            boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+          }}
+        >
           <input
             type="text"
             placeholder="Search parameters..."
@@ -749,13 +1080,13 @@ const ParameterSelector = ({ station, parameters, onParameterToggle }) => {
               padding: "8px",
               border: "none",
               borderBottom: "1px solid #eee",
-              outline: "none"
+              outline: "none",
             }}
             autoFocus
           />
           <div style={{ maxHeight: "150px", overflowY: "auto" }}>
             {filteredParameters.length > 0 ? (
-              filteredParameters.map(param => (
+              filteredParameters.map((param) => (
                 <label
                   key={param.id}
                   style={{
@@ -764,24 +1095,28 @@ const ParameterSelector = ({ station, parameters, onParameterToggle }) => {
                     padding: "8px",
                     cursor: "pointer",
                     borderBottom: "1px solid #f0f0f0",
-                    fontSize: "12px"
+                    fontSize: "12px",
                   }}
                 >
                   <input
                     type="checkbox"
-                    checked={currentParams.some(p => p.id === param.id)}
+                    checked={currentParams.some((p) => p.id === param.id)}
                     onChange={() => handleToggle(param.name)}
                     style={{ marginRight: "8px" }}
                   />
                   <span>
                     {param.name}
-                    {param.unit && <span style={{ color: "#666" }}> ({param.unit})</span>}
+                    {param.unit && (
+                      <span style={{ color: "#666" }}> ({param.unit})</span>
+                    )}
                   </span>
                 </label>
               ))
             ) : (
               <div style={{ padding: "8px", color: "#666", fontSize: "12px" }}>
-                {searchTerm ? `No parameters found matching "${searchTerm}"` : "No parameters available"}
+                {searchTerm
+                  ? `No parameters found matching "${searchTerm}"`
+                  : "No parameters available"}
               </div>
             )}
           </div>
