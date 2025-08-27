@@ -25,6 +25,22 @@ const AddStation = () => {
     { id: 1, machine: "", cycleTime: "", dailyCount: "", perHour: "" },
   ]);
 
+  const fetchMachinesByProduct = async (productName) => {
+    try {
+      const res = await fetch(
+        `http://localhost:5000/api/machines/by-product/${encodeURIComponent(productName)}`
+      );
+      if (!res.ok) {
+        return [];
+      }
+      const list = await res.json();
+      return Array.isArray(list) ? list : [];
+    } catch (e) {
+      console.error("Failed to fetch machines:", e);
+      return [];
+    }
+  };
+
   useEffect(() => {
     const fetchAllProducts = async () => {
       try {
@@ -89,6 +105,16 @@ const AddStation = () => {
       console.log("Product selected, fetching stations for:", selected);
       setDebugInfo(`Product selected: ${selected}`);
       fetchStationsByProduct(selected);
+      if (isChecked) {
+        (async () => {
+          const existing = await fetchMachinesByProduct(selected);
+          if (existing.length > 0) {
+            setRows(existing);
+          } else {
+            setRows([{ id: 1, machine: "", cycleTime: "", dailyCount: "", perHour: "" }]);
+          }
+        })();
+      }
     } else {
       setStations([]);
       setDebugInfo("");
@@ -101,8 +127,19 @@ const AddStation = () => {
 
     if (checked) {
       console.log("Checkbox is checked");
+      if (selected) {
+        (async () => {
+          const existing = await fetchMachinesByProduct(selected);
+          if (existing.length > 0) {
+            setRows(existing);
+          } else {
+            setRows([{ id: 1, machine: "", cycleTime: "", dailyCount: "", perHour: "" }]);
+          }
+        })();
+      }
     } else {
       console.log("Checkbox is unchecked");
+      setRows([{ id: 1, machine: "", cycleTime: "", dailyCount: "", perHour: "" }]);
     }
   };
 

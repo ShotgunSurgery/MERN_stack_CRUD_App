@@ -71,3 +71,41 @@ export const deleteMachine = async (req, res) => {
     return res.status(500).json({ error: "Failed to delete machine" });
   }
 };
+
+export const getMachinesByProduct = async (req, res) => {
+  const { productName } = req.params;
+  if (!productName) {
+    return res.status(400).json({ error: "Missing product name" });
+  }
+
+  try {
+    const [productRows] = await db.query(
+      "SELECT id FROM products WHERE name = ? LIMIT 1",
+      [productName]
+    );
+    if (!productRows || productRows.length === 0) {
+      return res.status(404).json({ error: "Product not found" });
+    }
+    const productId = productRows[0].id;
+
+    const [rows] = await db.query(
+      `SELECT id, machine_name, cycle_time, daily_count, products_per_hour, created_at
+       FROM machines WHERE product_id = ? ORDER BY id ASC`,
+      [productId]
+    );
+
+    return res.json(
+      rows.map((r, index) => ({
+        id: r.id ?? index + 1,
+        machine: r.machine_name,
+        cycleTime: r.cycle_time,
+        dailyCount: r.daily_count,
+        perHour: r.products_per_hour,
+        created_at: r.created_at,
+      }))
+    );
+  } catch (err) {
+    console.error("Error fetching machines:", err);
+    return res.status(500).json({ error: "Failed to fetch machines" });
+  }
+};
