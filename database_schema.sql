@@ -50,4 +50,3 @@ CREATE TABLE stations (
     report_type ENUM('Done', 'Pending', 'In process') NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-
