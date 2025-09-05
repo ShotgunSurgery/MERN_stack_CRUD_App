@@ -2,15 +2,43 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import db from "./config/db.js";
-import productRoutes from "../backend/routes/productRoutes.js"
+import productRoutes from "./routes/productRoutes.js";
+import stationRoutes from "./routes/stationRoutes.js";
+import machineRoutes from "./routes/machineRoutes.js";
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+
 app.use(cors());
 app.use(express.json());
+
+// Machines routes
+app.use("/api/machines", machineRoutes);
+
+// Ensure required tables exist (especially machines)
+(async () => {
+  try {
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS machines (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        product_id INT NOT NULL,
+        machine_name VARCHAR(255) NOT NULL,
+        cycle_time INT NOT NULL DEFAULT 0,
+        daily_count INT NOT NULL DEFAULT 0,
+        products_per_hour INT NOT NULL DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        CONSTRAINT fk_machines_product FOREIGN KEY (product_id)
+          REFERENCES products(id) ON DELETE CASCADE
+      )
+    `);
+    console.log("Ensured machines table exists");
+  } catch (err) {
+    console.error("Failed creating/ensuring machines table:", err);
+  }
+})();
 
 app.get("/api/health", (req, res) => {
   res.json({ message: "Server is running" });
@@ -69,6 +97,7 @@ app.get("/api/db-test", async (req, res) => {
 
 // Mount product routes -> the below is the base route
 app.use("/api/products", productRoutes); 
+app.use("/api/stations", stationRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

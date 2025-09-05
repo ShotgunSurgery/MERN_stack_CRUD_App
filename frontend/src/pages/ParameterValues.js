@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from "react";
 import "../styles/shared.css";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 
 const ParameterValues = () => {
   const { productId } = useParams();
   const navigate = useNavigate();
   const [parameters, setParameters] = useState([]);
   const [productName, setProductName] = useState("");
+  const [rows, setRows] = useState([]); // Array of row objects, each containing values for all parameters
+  const location = useLocation();
+  // const productId = location.state?.productId;
 
-  // if we declare the function outside then react will call it on every render, but useEffect hook ensures it
-  // only runs when the page is initially loaded and when the productId changes
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -24,19 +25,26 @@ const ParameterValues = () => {
         const valuesRes = await fetch(`http://localhost:5000/api/products/${productId}/values`);
         const valuesData = await valuesRes.json();
         
-        // Update parameters with existing values
+        // Transform existing values into rows format
         if (valuesData.length > 0) {
-          const updatedParams = data.parameters.map(param => {
-            const existingValue = valuesData[0][param.parameterName];
-            return {
-              ...param,
-              value: existingValue || ''
-            };
+          // Each item in valuesData represents a row with existing values
+          const existingRows = valuesData.map(rowData => {
+            const row = { name: rowData.name || "" };
+            // Add values for each parameter
+            data.parameters.forEach(param => {
+              row[param.parameterName] = rowData[param.parameterName] || "";
+            });
+            return row;
           });
-          setParameters(updatedParams);
+          setRows(existingRows);
+        } else {
+          // If no existing values, create one empty row
+          setRows([createEmptyRow(data.parameters || [])]);
         }
       } catch (err) {
         console.error("Error fetching data:", err);
+        // Initialize with one empty row on error
+        setRows([createEmptyRow([])]);
       }
     };
     
@@ -45,50 +53,48 @@ const ParameterValues = () => {
     }
   }, [productId]);
 
-  const onDragEnd = (result) => {
-    if (!result.destination) return;
-    const items = Array.from(parameters);
-    const [reordered] = items.splice(result.source.index, 1);
-    items.splice(result.destination.index, 0, reordered);
-    setParameters(items);
+  // Create an empty row object with all parameter fields
+  const createEmptyRow = (params) => {
+    const row = { name: "" }; // First column is always "name"
+    params.forEach(param => {
+      row[param.parameterName] = ""; // Add a field for each parameter
+    });
+    return row;
   };
 
-   const handleChange = (index, field, value) => {
-    const updated = [...parameters];
-    updated[index][field] = value;
-    setParameters(updated);
+  const onDragEnd = (result) => {
+    if (!result.destination) return;
+    const items = Array.from(rows);
+    const [reordered] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reordered);
+    setRows(items);
+  };
+
+  const handleChange = (rowIndex, field, value) => {
+    const updated = [...rows];
+    updated[rowIndex][field] = value;
+    setRows(updated);
   };
 
   const deleteRow = (index) => {
-    const updated = [...parameters];
+    const updated = [...rows];
     updated.splice(index, 1);
-    setParameters(updated);
+    setRows(updated);
   };
 
   const addRow = () => {
-    setParameters([
-      ...parameters,
-      {
-        parameterName: "",
-        value: "",
-      },
-    ]);
+    setRows([...rows, createEmptyRow(parameters)]);
   };
 
   const saveValues = async () => {
     try {
-      // Transform the data to match backend expectations
-      const rows = parameters.map(param => ({
-        name: `Record ${param.parameterName}`,
-        [param.parameterName]: param.value || ''
-      }));
-
+      // Use the actual rows state that contains user input
       const res = await fetch(
         `http://localhost:5000/api/products/${productId}/values`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rows }),
+          body: JSON.stringify({ rows: rows }), // Send the actual rows state
         }
       );
       const result = await res.json();
@@ -112,7 +118,7 @@ const ParameterValues = () => {
       </div>
 
       <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="parameters">
+        <Droppable droppableId="rows">
           {(provided) => (
             <table
               className="table"
@@ -123,52 +129,60 @@ const ParameterValues = () => {
                 <tr>
                   <td>#</td>
                   <td>Drag</td>
-                  <td>Parameter Name</td>
-                  <td>Value</td>
+                  <td>Name</td>
+                  {parameters.map((param, index) => (
+                    <td key={index}>{param.parameterName}</td>
+                  ))}
                   <td>Delete</td>
                 </tr>
               </thead>
               <tbody>
-                {parameters.map((param, index) => (
+                {rows.map((row, rowIndex) => (
                   <Draggable
-                    key={index}
-                    draggableId={index.toString()}
-                    index={index}
+                    key={rowIndex}
+                    draggableId={rowIndex.toString()}
+                    index={rowIndex}
                   >
                     {(provided) => (
-                      <tr
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                      >
+                      <tr ref={provided.innerRef} {...provided.draggableProps}>
                         {/* Row number */}
-                        <td>{index + 1}</td>
+                        <td>{rowIndex + 1}</td>
 
                         {/* Drag handle */}
-                        <td {...provided.dragHandleProps} style={{ cursor: "grab" }}>
+                        <td
+                          {...provided.dragHandleProps}
+                          style={{ cursor: "grab" }}
+                        >
                           ☰
                         </td>
 
-                        {/* Parameter name (fetched from DB) */}
+                        {/* Name column */}
                         <td>
                           <input
-                            value={param.parameterName}
-                            disabled
+                            value={row.name || ""}
+                            onChange={(e) =>
+                              handleChange(rowIndex, "name", e.target.value)
+                            }
+                            placeholder="Enter name"
                           />
                         </td>
 
-                        {/* Editable value */}
-                        <td>
-                          <input
-                            value={param.value || ""}
-                            onChange={(e) =>
-                              handleChange(index, "value", e.target.value)
-                            }
-                          />
-                        </td>
+                        {/* Parameter value columns */}
+                        {parameters.map((param, paramIndex) => (
+                          <td key={paramIndex}>
+                            <input
+                              value={row[param.parameterName] || ""}
+                              onChange={(e) =>
+                                handleChange(rowIndex, param.parameterName, e.target.value)
+                              }
+                              placeholder={`Enter ${param.parameterName}`}
+                            />
+                          </td>
+                        ))}
 
                         {/* Delete row */}
                         <td>
-                          <button className="btn btn-danger" onClick={() => deleteRow(index)}>🗑️</button>
+                          <button className="btn btn-danger" onClick={() => deleteRow(rowIndex)}>🗑️</button>
                         </td>
                       </tr>
                     )}
