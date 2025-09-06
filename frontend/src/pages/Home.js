@@ -9,7 +9,7 @@ const ExpandableRow = ({ product }) => {
         <div className="expandable-content">
           <h3>Parameters</h3>
           {product.parameters && product.parameters.length > 0 ? (
-            <table className="tbl">
+            <table className="nested-table">
               <thead>
                 <tr>
                   <th>Name</th>
@@ -34,7 +34,7 @@ const ExpandableRow = ({ product }) => {
           )}
           <h3>Parameter Values</h3>
           {product.parameterValues && product.parameterValues.length > 0 ? (
-            <table className="tbl">
+            <table className="nested-table">
               <thead>
                 <tr>
                   <th>Record Name</th>
@@ -152,83 +152,123 @@ const Home = () => {
   };
 
   if (loading) {
-    return <div><h1 className="mainHead">Loading products...</h1></div>;
+    return (
+      <div className="main-content">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <h1>Loading products...</h1>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div>
-        <h1 className="mainHead">Error Loading Products</h1>
-        <p style={{ color: "red" }}>Error: {error}</p>
-        <button onClick={() => window.location.reload()}>Retry</button>
+      <div className="main-content">
+        <div className="error-container">
+          <h1>Error Loading Products</h1>
+          <div className="error-message">Error: {error}</div>
+          <button className="btn-retry" onClick={() => window.location.reload()}>Retry</button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <h1 className="mainHead">Existing Product</h1>
+    <div className="main-content">
+      <div className="page-header">
+        <h1 className="page-title">Existing Products</h1>
+        <div className="action-buttons">
+          <Link to="/createProduct" className="btn-create">
+            Create New Product
+          </Link>
+        </div>
+      </div>
+      
       {products.length > 0 ? (
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>Product Name</th>
-              <th>Details</th>
-              <th>Edit</th>
-              <th>Edit Values</th>
-              <th>Delete</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentProducts.map((p) => (
-              <React.Fragment key={p.id}>
-                <tr>
-                  <td>{p.name}</td>
-                  <td>
-                    <button onClick={() => handleToggleExpand(p.id)}>
-                      {expandedProductId === p.id ? "Collapse" : "View Details"}
-                    </button>
-                  </td>
-                  <td>
-                    <button onClick={() => fetchProductParams(p.id)}>Edit</button>
-                  </td>
-                  <td>
-                    <Link to={`/parameters/${p.id}`}>
-                      <button>Edit Values</button>
-                    </Link>
-                  </td>
-                  <td>
-                    <button onClick={() => deleteProduct(p.id, p.name)}>Delete</button>
-                  </td>
-                </tr>
-                {expandedProductId === p.id && <ExpandableRow product={p} />}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
+        <div className="products-table-container">
+          <table className="products-table">
+            <thead>
+              <tr>
+                <th>Product Name</th>
+                <th>Details</th>
+                <th>Edit</th>
+                <th>Edit Values</th>
+                <th>Delete</th>
+              </tr>
+            </thead>
+            <tbody>
+              {currentProducts.map((p) => (
+                <React.Fragment key={p.id}>
+                  <tr>
+                    <td className="product-name">{p.name}</td>
+                    <td>
+                      <div className="table-actions">
+                        <button 
+                          className="btn-action btn-details"
+                          onClick={() => handleToggleExpand(p.id)}
+                        >
+                          {expandedProductId === p.id ? "Collapse" : "View Details"}
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button 
+                          className="btn-action btn-edit"
+                          onClick={() => fetchProductParams(p.id)}
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <Link to={`/parameters/${p.id}`}>
+                          <button className="btn-action btn-edit-values">Edit Values</button>
+                        </Link>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button 
+                          className="btn-action btn-delete"
+                          onClick={() => deleteProduct(p.id, p.name)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {expandedProductId === p.id && <ExpandableRow product={p} />}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
-        <p>No products found.</p>
+        <div className="empty-state">
+          <h3>No Products Found</h3>
+          <p>Start by creating your first product to get started.</p>
+          <Link to="/createProduct" className="btn-create">
+            Create Your First Product
+          </Link>
+        </div>
       )}
       {products.length > productsPerPage && (
-        <div style={{ marginTop: '20px', textAlign: 'center' }}>
-          <div style={{ marginBottom: '10px' }}>
+        <div className="pagination-container">
+          <div className="pagination-info">
             <span>Page {currentPage} of {totalPages}</span>
             <span style={{ marginLeft: '20px' }}>
               Showing {indexOfFirstProduct + 1} to {Math.min(indexOfLastProduct, products.length)} of {products.length} products
             </span>
           </div>
           
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', alignItems: 'center' }}>
+          <div className="pagination-controls">
             <button 
+              className="pagination-button"
               onClick={goToPreviousPage} 
               disabled={currentPage === 1}
-              style={{ 
-                padding: '8px 16px', 
-                border: '1px solid #ccc', 
-                backgroundColor: currentPage === 1 ? '#f5f5f5' : 'white',
-                color: currentPage === 1 ? '#999' : '#333',
-                cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
-              }}
             >
               Previous
             </button>
@@ -236,39 +276,23 @@ const Home = () => {
             {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
               <button
                 key={pageNumber}
+                className={`pagination-button ${currentPage === pageNumber ? 'active' : ''}`}
                 onClick={() => goToPage(pageNumber)}
-                style={{
-                  padding: '8px 12px',
-                  border: '1px solid #ccc',
-                  backgroundColor: currentPage === pageNumber ? '#007bff' : 'white',
-                  color: currentPage === pageNumber ? 'white' : '#333',
-                  cursor: 'pointer',
-                  minWidth: '40px'
-                }}
               >
                 {pageNumber}
               </button>
             ))}
             
             <button 
+              className="pagination-button"
               onClick={goToNextPage} 
               disabled={currentPage === totalPages}
-              style={{ 
-                padding: '8px 16px', 
-                border: '1px solid #ccc', 
-                backgroundColor: currentPage === totalPages ? '#f5f5f5' : 'white',
-                color: currentPage === totalPages ? '#999' : '#333',
-                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
-              }}
             >
               Next
             </button>
           </div>
         </div>
       )}
-      <Link to="/createProduct">
-        <button className="createNew">Create New +</button>
-      </Link>
     </div>
   );
 };
