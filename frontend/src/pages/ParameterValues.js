@@ -9,7 +9,7 @@ const ParameterValues = () => {
   const [parameters, setParameters] = useState([]);
   const [productName, setProductName] = useState("");
   const [rows, setRows] = useState([]); // Array of row objects, each containing values for all parameters
-  const location = useLocation();
+  
   // const productId = location.state?.productId;
 
   useEffect(() => {

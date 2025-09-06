@@ -5,6 +5,7 @@ import db from "./config/db.js";
 import productRoutes from "./routes/productRoutes.js";
 import stationRoutes from "./routes/stationRoutes.js";
 import machineRoutes from "./routes/machineRoutes.js";
+import userRoutes from "./routes/userRoutes.js";
 
 dotenv.config();
 
@@ -96,8 +97,9 @@ app.get("/api/db-test", async (req, res) => {
 });
 
 // Mount product routes -> the below is the base route
-app.use("/api/products", productRoutes); 
+app.use("/api/products", productRoutes);
 app.use("/api/stations", stationRoutes);
+app.use("/api/users", userRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

@@ -7,8 +7,11 @@ import {
 } from "../controllers/parameterController.js";
 import { allProducts } from "../controllers/allProducts.js";
 import { getAllProductsWithDetails } from "../controllers/detailedProducts.js";
+import { testEndpoint } from "../controllers/testController.js";
 
 const router = express.Router();
+
+router.get("/test", testEndpoint);
 
 router.get("/allProducts", allProducts);
 

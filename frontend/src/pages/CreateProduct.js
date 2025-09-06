@@ -7,7 +7,6 @@ const CreateProduct = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const productData = location.state?.productData;
-  const navigate = useNavigate();
 
   const [productName, setProductName] = useState(
     productData ? productData.name : ""

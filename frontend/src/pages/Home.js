@@ -71,9 +71,6 @@ const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({});
-  const [productsPerPage] = useState(15);
   const [expandedProductId, setExpandedProductId] = useState(null);
   const navigate = useNavigate();
 
@@ -171,22 +168,6 @@ const Home = () => {
     };
     fetchProducts();
   }, []);
-
-  const goToPage = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
-
-  const goToNextPage = () => {
-    if (currentPage < pagination.totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
 
   if (loading) {
     return <div className="loading-container"><h1 className="mainHead">Loading products...</h1></div>;
