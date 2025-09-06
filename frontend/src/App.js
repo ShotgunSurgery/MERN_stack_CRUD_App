@@ -9,7 +9,6 @@ import CreateProduct from "./pages/CreateProduct";
 import ParameterValues from "./pages/ParameterValues";
 import AddStation from "./pages/AddStation";
 import UserRegistration from "./pages/UserRegistration";
-
 function App() {
   return (
     <Router>
