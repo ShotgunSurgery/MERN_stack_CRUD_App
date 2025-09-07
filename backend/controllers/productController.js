@@ -33,13 +33,13 @@ export const createProduct = async (req, res) => {
           param.evaluation,
           param.sampleSize === '' ? null : param.sampleSize,
           param.compulsory ? 1 : 0,
-          param.status,
+          param.status || 'Pending',
         ]
       );
     }
 
     await conn.commit();
-    res.status(201).json({ message: "Product created successfully" });
+    res.status(201).json({ message: "Product created successfully", productId: productId });
   } catch (error) {
     await conn.rollback();
     console.error(error);
@@ -81,7 +81,7 @@ export const updateProduct = async (req, res) => {
           param.evaluation,
           param.sampleSize === '' ? null : param.sampleSize,
           param.compulsory ? 1 : 0,
-          param.status,
+          param.status || 'Pending',
         ]
       );
     }
@@ -123,6 +123,34 @@ export const deleteProduct = async (req, res) => {
     await conn.rollback();
     console.error("Error deleting product:", error);
     res.status(500).json({ error: "Failed to delete product" });
+  } finally {
+    conn.release();
+  }
+};
+
+export const reorderProducts = async (req, res) => {
+  const { productIds } = req.body; // Expects an array of product IDs in the desired order
+
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+
+    for (let i = 0; i < productIds.length; i++) {
+      const productId = productIds[i];
+      const displayOrder = i; // Assign order based on array index
+
+      await conn.query(
+        "UPDATE products SET display_order = ? WHERE id = ?",
+        [displayOrder, productId]
+      );
+    }
+
+    await conn.commit();
+    res.status(200).json({ message: "Products reordered successfully" });
+  } catch (error) {
+    await conn.rollback();
+    console.error("Error reordering products:", error);
+    res.status(500).json({ error: "Failed to reorder products", details: error.message });
   } finally {
     conn.release();
   }

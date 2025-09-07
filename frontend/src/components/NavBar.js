@@ -8,6 +8,11 @@ export default function NavBar(){
         <Link to="/" style={styles.link}>Home</Link>
         <Link to="/createProduct" style={styles.link}>Create Product</Link>
         <Link to="/addStation" style={styles.link}>Add Station</Link>
+
+        <Link to="/userRegistration" style={styles.link}>User Registration</Link>
+
+        <Link to="/shiftConfig" style={styles.link}>Shift Configuration</Link>
+
       </div>
     </nav>
   );

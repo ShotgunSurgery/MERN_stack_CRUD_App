@@ -1,60 +1,66 @@
 import React, { useEffect, useState } from "react";
 import "../styles/Home.css";
 import { Link, useNavigate } from "react-router-dom";
+import { FaEye, FaPen, FaTrash } from 'react-icons/fa';
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const ExpandableRow = ({ product }) => {
   return (
     <tr className="expandable-row">
-      <td colSpan="5">
+      <td colSpan="7">
         <div className="expandable-content">
-          <h3>Parameters</h3>
-          {product.parameters && product.parameters.length > 0 ? (
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Max Value</th>
-                  <th>Min Value</th>
-                  <th>Unit</th>
-                </tr>
-              </thead>
-              <tbody>
-                {product.parameters.map((param) => (
-                  <tr key={param.id}>
-                    <td>{param.parameterName}</td>
-                    <td>{param.max_value}</td>
-                    <td>{param.min_value}</td>
-                    <td>{param.unit}</td>
+          <div className="expandable-section">
+            <h3>Parameters</h3>
+            {product.parameters && product.parameters.length > 0 ? (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Max Value</th>
+                    <th>Min Value</th>
+                    <th>Unit</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>No parameters found.</p>
-          )}
-          <h3>Parameter Values</h3>
-          {product.parameterValues && product.parameterValues.length > 0 ? (
-            <table className="tbl">
-              <thead>
-                <tr>
-                  <th>Record Name</th>
-                  <th>Parameter Name</th>
-                  <th>Value</th>
-                </tr>
-              </thead>
-              <tbody>
-                {product.parameterValues.map((paramValue) => (
-                  <tr key={paramValue.id}>
-                    <td>{paramValue.record_name}</td>
-                    <td>{paramValue.parameter_name}</td>
-                    <td>{paramValue.value}</td>
+                </thead>
+                <tbody>
+                  {product.parameters.map((param) => (
+                    <tr key={param.id}>
+                      <td>{param.parameterName}</td>
+                      <td>{param.max_value}</td>
+                      <td>{param.min_value}</td>
+                      <td>{param.unit}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p>No parameters found.</p>
+            )}
+          </div>
+          <div className="expandable-section">
+            <h3>Parameter Values</h3>
+            {product.parameterValues && product.parameterValues.length > 0 ? (
+              <table className="table">
+                <thead>
+                  <tr>
+                    <th>Record Name</th>
+                    <th>Parameter Name</th>
+                    <th>Value</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>No parameter values found.</p>
-          )}
+                </thead>
+                <tbody>
+                  {product.parameterValues.map((paramValue) => (
+                    <tr key={paramValue.id}>
+                      <td>{paramValue.record_name}</td>
+                      <td>{paramValue.parameter_name}</td>
+                      <td>{paramValue.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p>No parameter values found.</p>
+            )}
+          </div>
         </div>
       </td>
     </tr>
@@ -65,8 +71,6 @@ const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [productsPerPage] = useState(15);
   const [expandedProductId, setExpandedProductId] = useState(null);
   const navigate = useNavigate();
 
@@ -104,18 +108,53 @@ const Home = () => {
     }
   };
 
+  const onDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(products);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setProducts(items); // Update frontend immediately for smooth UX
+
+    // Send updated order to backend
+    try {
+      const productIds = items.map(p => p.id);
+      const res = await fetch(`http://localhost:5000/api/products/reorder`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ productIds }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to reorder products on backend");
+      }
+      console.log("Products reordered successfully on backend.");
+    } catch (err) {
+      console.error("Error persisting product order:", err);
+      alert("Error saving new product order: " + err.message);
+      // Optionally, revert frontend state if backend update fails
+      // setProducts(originalItems);
+    }
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch("http://localhost:5000/api/products/all-with-details");
+        const res = await fetch(
+          `http://localhost:5000/api/products/all-with-details`
+        );
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-        const productsList = await res.json();
-        if (Array.isArray(productsList)) {
-          setProducts(productsList);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setProducts(data);
         } else {
           setError("Invalid data format received from server");
           setProducts([]);
@@ -130,34 +169,13 @@ const Home = () => {
     fetchProducts();
   }, []);
 
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
-  const totalPages = Math.ceil(products.length / productsPerPage);
-
-  const goToPage = (pageNumber) => {
-    setCurrentPage(pageNumber);
-  };
-
-  const goToNextPage = () => {
-    if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
-    }
-  };
-
-  const goToPreviousPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
-    }
-  };
-
   if (loading) {
-    return <div><h1 className="mainHead">Loading products...</h1></div>;
+    return <div className="loading-container"><h1 className="mainHead">Loading products...</h1></div>;
   }
 
   if (error) {
     return (
-      <div>
+      <div className="error-container">
         <h1 className="mainHead">Error Loading Products</h1>
         <p style={{ color: "red" }}>Error: {error}</p>
         <button onClick={() => window.location.reload()}>Retry</button>
@@ -166,109 +184,80 @@ const Home = () => {
   }
 
   return (
-    <div>
-      <h1 className="mainHead">Existing Product</h1>
+    <div className="container">
+      <div className="header">
+        <h1 className="mainHead">Existing Product</h1>
+        <Link to="/createProduct">
+          <button className="btn btn-primary">Create New +</button>
+        </Link>
+      </div>
       {products.length > 0 ? (
-        <table className="tbl">
-          <thead>
-            <tr>
-              <th>Product Name</th>
-              <th>Details</th>
-              <th>Edit</th>
-              <th>Edit Values</th>
-              <th>Delete</th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentProducts.map((p) => (
-              <React.Fragment key={p.id}>
-                <tr>
-                  <td>{p.name}</td>
-                  <td>
-                    <button onClick={() => handleToggleExpand(p.id)}>
-                      {expandedProductId === p.id ? "Collapse" : "View Details"}
-                    </button>
-                  </td>
-                  <td>
-                    <button onClick={() => fetchProductParams(p.id)}>Edit</button>
-                  </td>
-                  <td>
-                    <Link to={`/parameters/${p.id}`}>
-                      <button>Edit Values</button>
-                    </Link>
-                  </td>
-                  <td>
-                    <button onClick={() => deleteProduct(p.id, p.name)}>Delete</button>
-                  </td>
-                </tr>
-                {expandedProductId === p.id && <ExpandableRow product={p} />}
-              </React.Fragment>
-            ))}
-          </tbody>
-        </table>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <table className="table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Drag</th>
+                <th>Product Name</th>
+                <th>Details</th>
+                <th>Edit Parameter</th>
+                <th>Edit Parameter Values</th>
+                <th>Delete</th>
+              </tr>
+            </thead>
+            <Droppable droppableId="products">
+              {(provided) => (
+                <tbody {...provided.droppableProps} ref={provided.innerRef}>
+                  {products.map((p, index) => (
+                    <Draggable key={p.id} draggableId={p.id.toString()} index={index}>
+                      {(provided) => (
+                        <React.Fragment>
+                          <tr
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                          >
+                            <td>{index + 1}</td>
+                            <td {...provided.dragHandleProps} style={{ cursor: "grab" }}>
+                              ☰
+                            </td>
+                            <td>{p.name}</td>
+                            <td>
+                              <button onClick={() => handleToggleExpand(p.id)} className="btn btn-secondary">
+                                <FaEye /> {expandedProductId === p.id ? "Collapse" : "View Details"}
+                              </button>
+                            </td>
+                            <td>
+                              <button onClick={() => fetchProductParams(p.id)} className="btn btn-warning">
+                                <FaPen /> Edit
+                              </button>
+                            </td>
+                            <td>
+                              <Link to={`/parameters/${p.id}`}>
+                                <button className="btn btn-info">
+                                  <FaPen /> Edit Values
+                                </button>
+                              </Link>
+                            </td>
+                            <td>
+                              <button onClick={() => deleteProduct(p.id, p.name)} className="btn btn-danger">
+                                <FaTrash /> Delete
+                              </button>
+                            </td>
+                          </tr>
+                          {expandedProductId === p.id && <ExpandableRow product={p} />}
+                        </React.Fragment>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </tbody>
+              )}
+            </Droppable>
+          </table>
+        </DragDropContext>
       ) : (
         <p>No products found.</p>
       )}
-      {products.length > productsPerPage && (
-        <div style={{ marginTop: '20px', textAlign: 'center' }}>
-          <div style={{ marginBottom: '10px' }}>
-            <span>Page {currentPage} of {totalPages}</span>
-            <span style={{ marginLeft: '20px' }}>
-              Showing {indexOfFirstProduct + 1} to {Math.min(indexOfLastProduct, products.length)} of {products.length} products
-            </span>
-          </div>
-          
-          <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', alignItems: 'center' }}>
-            <button 
-              onClick={goToPreviousPage} 
-              disabled={currentPage === 1}
-              style={{ 
-                padding: '8px 16px', 
-                border: '1px solid #ccc', 
-                backgroundColor: currentPage === 1 ? '#f5f5f5' : 'white',
-                color: currentPage === 1 ? '#999' : '#333',
-                cursor: currentPage === 1 ? 'not-allowed' : 'pointer'
-              }}
-            >
-              Previous
-            </button>
-            
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
-              <button
-                key={pageNumber}
-                onClick={() => goToPage(pageNumber)}
-                style={{
-                  padding: '8px 12px',
-                  border: '1px solid #ccc',
-                  backgroundColor: currentPage === pageNumber ? '#007bff' : 'white',
-                  color: currentPage === pageNumber ? 'white' : '#333',
-                  cursor: 'pointer',
-                  minWidth: '40px'
-                }}
-              >
-                {pageNumber}
-              </button>
-            ))}
-            
-            <button 
-              onClick={goToNextPage} 
-              disabled={currentPage === totalPages}
-              style={{ 
-                padding: '8px 16px', 
-                border: '1px solid #ccc', 
-                backgroundColor: currentPage === totalPages ? '#f5f5f5' : 'white',
-                color: currentPage === totalPages ? '#999' : '#333',
-                cursor: currentPage === totalPages ? 'not-allowed' : 'pointer'
-              }}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
-      <Link to="/createProduct">
-        <button className="createNew">Create New +</button>
-      </Link>
     </div>
   );
 };

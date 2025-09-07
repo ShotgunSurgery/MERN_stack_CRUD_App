@@ -12,8 +12,6 @@ const AddStation = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [stations, setStations] = useState([]);
   const [loadingStations, setLoadingStations] = useState(false);
-  const [debugInfo, setDebugInfo] = useState("");
-  const [parametersDebug, setParametersDebug] = useState("");
 
   const [stationNumber, setStationNumber] = useState("");
   const [stationName, setStationName] = useState("");
@@ -69,31 +67,22 @@ const AddStation = () => {
     const fetchParameters = async () => {
       try {
         console.log("Fetching parameters...");
-        setParametersDebug("Fetching parameters...");
 
         const res = await fetch(
           "http://localhost:5000/api/stations/parameters"
         );
         console.log("Parameters response status:", res.status);
-        setParametersDebug(`Response status: ${res.status}`);
 
         if (res.ok) {
           const paramsList = await res.json();
           console.log("Received parameters:", paramsList);
-          setParametersDebug(
-            `Received ${paramsList.length} parameters: ${JSON.stringify(
-              paramsList
-            )}`
-          );
           setParameters(paramsList);
         } else {
           const errorText = await res.text();
           console.error("Failed to fetch parameters:", res.status, errorText);
-          setParametersDebug(`Error: ${res.status} - ${errorText}`);
         }
       } catch (err) {
         console.error("Error fetching parameters:", err);
-        setParametersDebug(`Exception: ${err.message}`);
       }
     };
     fetchParameters();
@@ -103,7 +92,6 @@ const AddStation = () => {
   useEffect(() => {
     if (selected) {
       console.log("Product selected, fetching stations for:", selected);
-      setDebugInfo(`Product selected: ${selected}`);
       fetchStationsByProduct(selected);
       if (isChecked) {
         (async () => {
@@ -117,9 +105,8 @@ const AddStation = () => {
       }
     } else {
       setStations([]);
-      setDebugInfo("");
     }
-  }, [selected]);
+  }, [selected, isChecked]);
 
   const handleCheckBox = (event) => {
     const checked = event.target.checked;
@@ -219,45 +206,37 @@ const AddStation = () => {
     console.log("Starting to fetch stations for:", productName);
     setLoadingStations(true);
     setStations([]);
-    setDebugInfo(`Fetching stations for: ${productName}`);
 
     try {
       const url = `http://localhost:5000/api/stations/by-product/${encodeURIComponent(
         productName
       )}`;
       console.log("Fetching from URL:", url);
-      setDebugInfo(`Fetching from: ${url}`);
 
       const res = await fetch(url);
       console.log("Response status:", res.status);
       console.log("Response ok:", res.ok);
-      setDebugInfo(`Response status: ${res.status}`);
 
       if (!res.ok) {
         const errorText = await res.text();
         console.error("Error response:", errorText);
-        setDebugInfo(`Error: ${res.status} - ${errorText}`);
         throw new Error(`HTTP error! status: ${res.status}`);
       }
 
       const stationsList = await res.json();
       console.log("Received stations data:", stationsList);
-      setDebugInfo(`Received ${stationsList.length} stations`);
 
       if (Array.isArray(stationsList)) {
         setStations(stationsList);
         console.log(`Successfully set ${stationsList.length} stations`);
-        setDebugInfo(`Successfully loaded ${stationsList.length} stations`);
       } else {
         console.error("Invalid stations data format:", stationsList);
         setStations([]);
-        setDebugInfo(`Invalid data format: ${typeof stationsList}`);
       }
     } catch (err) {
       console.error("Error fetching stations:", err);
       setError(`Failed to fetch stations: ${err.message}`);
       setStations([]);
-      setDebugInfo(`Error: ${err.message}`);
     } finally {
       setLoadingStations(false);
       console.log("Finished loading stations");
@@ -799,45 +778,6 @@ const AddStation = () => {
           Error: {error}
         </div>
       )}
-
-      {/* Remove or comment out these debug sections */}
-
-      {/* Debug Information - REMOVE THIS ENTIRE SECTION */}
-      {/*
-      {debugInfo && (
-        <div style={{ 
-          marginTop: "20px", 
-          padding: "10px", 
-          backgroundColor: "#f0f8ff", 
-          border: "1px solid #ccc",
-          borderRadius: "4px"
-        }}>
-          <h4>Debug Info:</h4>
-          <p>{debugInfo}</p>
-          <button onClick={() => fetchStationsByProduct(selected)} style={{ marginTop: "10px" }}>
-            Manual Refresh
-          </button>
-        </div>
-      )}
-      */}
-
-      {/* Parameters Debug Information - REMOVE THIS ENTIRE SECTION */}
-      {/*
-      <div style={{ 
-        marginTop: "20px", 
-        padding: "10px", 
-        backgroundColor: "#fff8dc", 
-        border: "1px solid #ccc",
-        borderRadius: "4px"
-      }}>
-        <h4>Parameters Debug Info:</h4>
-        <p>{parametersDebug}</p>
-        <p>Parameters in state: {parameters.length}</p>
-        <button onClick={() => window.location.reload()} style={{ marginTop: "10px" }}>
-          Reload Page
-        </button>
-      </div>
-      */}
 
       {/* Existing Stations Table */}
       {selected && (
