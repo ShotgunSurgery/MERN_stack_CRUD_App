@@ -2,10 +2,13 @@ import React, { useEffect, useMemo, useState } from "react";
 import "../styles/Home.css";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
+import { FaEye, FaPen, FaTrash } from 'react-icons/fa';
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+
 const ExpandableRow = ({ product }) => {
   return (
     <tr className="expandable-row">
-      <td colSpan="5">
+      <td colSpan="7">
         <div className="expandable-content">
           <h3>Parameters</h3>
           {product.parameters && product.parameters.length > 0 ? (
@@ -48,13 +51,23 @@ const ExpandableRow = ({ product }) => {
                     <td>{paramValue.record_name}</td>
                     <td>{paramValue.parameter_name}</td>
                     <td>{paramValue.value}</td>
+
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>No parameter values found.</p>
-          )}
+                </thead>
+                <tbody>
+                  {product.parameterValues.map((paramValue) => (
+                    <tr key={paramValue.id}>
+                      <td>{paramValue.record_name}</td>
+                      <td>{paramValue.parameter_name}</td>
+                      <td>{paramValue.value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p>No parameter values found.</p>
+            )}
+          </div>
         </div>
       </td>
     </tr>
@@ -71,6 +84,7 @@ const Home = () => {
   const [currentPage, setCurrentPage] = useState(Number.isNaN(initialPage) ? 1 : initialPage);
   const [productsPerPage, setProductsPerPage] = useState(Number.isNaN(initialPerPage) ? 15 : initialPerPage);
   const [isPageLoading, setIsPageLoading] = useState(false);
+
   const [expandedProductId, setExpandedProductId] = useState(null);
   const navigate = useNavigate();
 
@@ -108,18 +122,53 @@ const Home = () => {
     }
   };
 
+  const onDragEnd = async (result) => {
+    if (!result.destination) return;
+
+    const items = Array.from(products);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setProducts(items); // Update frontend immediately for smooth UX
+
+    // Send updated order to backend
+    try {
+      const productIds = items.map(p => p.id);
+      const res = await fetch(`http://localhost:5000/api/products/reorder`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ productIds }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to reorder products on backend");
+      }
+      console.log("Products reordered successfully on backend.");
+    } catch (err) {
+      console.error("Error persisting product order:", err);
+      alert("Error saving new product order: " + err.message);
+      // Optionally, revert frontend state if backend update fails
+      // setProducts(originalItems);
+    }
+  };
+
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await fetch("http://localhost:5000/api/products/all-with-details");
+        const res = await fetch(
+          `http://localhost:5000/api/products/all-with-details`
+        );
         if (!res.ok) {
           throw new Error(`HTTP error! status: ${res.status}`);
         }
-        const productsList = await res.json();
-        if (Array.isArray(productsList)) {
-          setProducts(productsList);
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          setProducts(data);
         } else {
           setError("Invalid data format received from server");
           setProducts([]);
@@ -217,6 +266,7 @@ const Home = () => {
         </div>
       </div>
     );
+
   }
 
   if (error) {
@@ -227,6 +277,7 @@ const Home = () => {
           <div className="error-message">Error: {error}</div>
           <button className="btn-retry" onClick={() => window.location.reload()}>Retry</button>
         </div>
+
       </div>
     );
   }
@@ -310,6 +361,7 @@ const Home = () => {
             </tbody>
           </table>
         </div>
+
       ) : (
         <div className="empty-state">
           <h3>No Products Found</h3>
@@ -423,6 +475,7 @@ const Home = () => {
           </div>
         </div>
       )}
+
     </div>
   );
 };
