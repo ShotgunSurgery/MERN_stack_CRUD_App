@@ -1,3 +1,5 @@
+// This is ESM mode i.e. "type": "module" so no require allowed only import 
+
 import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
@@ -5,7 +7,11 @@ import db from "./config/db.js";
 import productRoutes from "./routes/productRoutes.js";
 import stationRoutes from "./routes/stationRoutes.js";
 import machineRoutes from "./routes/machineRoutes.js";
+
 import userRoutes from "./routes/userRoutes.js";
+
+import shiftRoute from "./routes/shifts.js";
+
 
 dotenv.config();
 
@@ -19,7 +25,10 @@ app.use(express.json());
 // Machines routes
 app.use("/api/machines", machineRoutes);
 
-// Ensure required tables exist (especially machines)
+// Mounting Shifts Route
+app.use("/api/shifts", shiftRoute);
+
+// Ensure required tables exist (especially machines and shifts)
 (async () => {
   try {
     await db.query(`
@@ -36,8 +45,21 @@ app.use("/api/machines", machineRoutes);
       )
     `);
     console.log("Ensured machines table exists");
+
+    await db.query(`
+      CREATE TABLE IF NOT EXISTS shifts (
+        id INT PRIMARY KEY AUTO_INCREMENT,
+        name VARCHAR(255) NOT NULL,
+        start_time TIME NOT NULL,
+        end_time TIME NOT NULL,
+        is_active BOOLEAN DEFAULT TRUE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+    console.log("Ensured shifts table exists");
   } catch (err) {
-    console.error("Failed creating/ensuring machines table:", err);
+    console.error("Failed creating/ensuring tables:", err);
   }
 })();
 

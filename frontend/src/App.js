@@ -8,7 +8,12 @@ import Home from '../src/pages/Home';
 import CreateProduct from "./pages/CreateProduct";
 import ParameterValues from "./pages/ParameterValues";
 import AddStation from "./pages/AddStation";
+
 import UserRegistration from "./pages/UserRegistration";
+
+import ShiftConfig from "./pages/ShiftConfig";
+
+
 function App() {
   return (
     <Router>
@@ -18,7 +23,11 @@ function App() {
         <Route path="/createProduct" element={<CreateProduct/>}></Route>
         <Route path="/parameters/:productId" element={<ParameterValues/>}></Route>
         <Route path="/addStation" element={<AddStation/>}></Route>
+
         <Route path="/userRegistration" element={<UserRegistration/>}></Route>
+
+        <Route path="/shiftConfig" element={<ShiftConfig/>}></Route>
+
       </Routes>
     </Router>
   );
