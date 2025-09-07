@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "../styles/Home.css";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 const ExpandableRow = ({ product }) => {
   return (
@@ -65,8 +65,12 @@ const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [productsPerPage] = useState(15);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialPage = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
+  const initialPerPage = parseInt(searchParams.get("perPage") || "15", 10);
+  const [currentPage, setCurrentPage] = useState(Number.isNaN(initialPage) ? 1 : initialPage);
+  const [productsPerPage, setProductsPerPage] = useState(Number.isNaN(initialPerPage) ? 15 : initialPerPage);
+  const [isPageLoading, setIsPageLoading] = useState(false);
   const [expandedProductId, setExpandedProductId] = useState(null);
   const navigate = useNavigate();
 
@@ -130,10 +134,30 @@ const Home = () => {
     fetchProducts();
   }, []);
 
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = products.slice(indexOfFirstProduct, indexOfLastProduct);
-  const totalPages = Math.ceil(products.length / productsPerPage);
+  // Keep URL in sync when page or perPage changes
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    params.set("page", String(currentPage));
+    params.set("perPage", String(productsPerPage));
+    setSearchParams(params, { replace: true });
+  }, [currentPage, productsPerPage]);
+
+  // Smooth page transition indicator
+  useEffect(() => {
+    if (loading) return;
+    setIsPageLoading(true);
+    const id = setTimeout(() => setIsPageLoading(false), 150);
+    return () => clearTimeout(id);
+  }, [currentPage, productsPerPage, loading]);
+
+  const totalPages = Math.ceil(products.length / productsPerPage); // This should be correct
+  const indexOfFirstProduct = (currentPage - 1) * productsPerPage;
+  const indexOfLastProduct = Math.min(indexOfFirstProduct + productsPerPage, products.length);
+  
+  const currentProducts = useMemo(
+    () => products.slice(indexOfFirstProduct, indexOfLastProduct),
+    [products, indexOfFirstProduct, indexOfLastProduct]
+  );
 
   const goToPage = (pageNumber) => {
     setCurrentPage(pageNumber);
@@ -150,6 +174,39 @@ const Home = () => {
       setCurrentPage(currentPage - 1);
     }
   };
+
+  const goToFirstPage = () => setCurrentPage(1);
+  const goToLastPage = () => setCurrentPage(totalPages);
+
+  const handlePerPageChange = (e) => {
+    const value = parseInt(e.target.value, 10);
+    setProductsPerPage(value);
+    setCurrentPage(1);
+  };
+
+  const visiblePageButtons = useMemo(() => {
+    const pages = [];
+    const maxButtons = 5;
+    if (totalPages <= maxButtons) {
+      for (let i = 1; i <= totalPages; i += 1) pages.push(i);
+      return pages;
+    }
+    const left = Math.max(1, currentPage - 2);
+    const right = Math.min(totalPages, currentPage + 2);
+    let start = left;
+    let end = right;
+    if (right - left + 1 < maxButtons) {
+      if (currentPage <= 3) {
+        start = 1;
+        end = 5;
+      } else if (currentPage >= totalPages - 2) {
+        start = totalPages - 4;
+        end = totalPages;
+      }
+    }
+    for (let i = start; i <= end; i += 1) pages.push(i);
+    return pages;
+  }, [currentPage, totalPages]);
 
   if (loading) {
     return (
@@ -198,17 +255,18 @@ const Home = () => {
               </tr>
             </thead>
             <tbody>
-              {currentProducts.map((p) => (
-                <React.Fragment key={p.id}>
+              {(isPageLoading ? Array.from({ length: Math.min(productsPerPage, products.length - indexOfFirstProduct) }) : currentProducts).map((p, i) => (
+                <React.Fragment key={p?.id || `skeleton-${i}`}>
                   <tr>
-                    <td className="product-name">{p.name}</td>
+                    <td className="product-name">{isPageLoading ? <div className="skeleton skeleton-text" /> : p.name}</td>
                     <td>
                       <div className="table-actions">
                         <button 
                           className="btn-action btn-details"
-                          onClick={() => handleToggleExpand(p.id)}
+                          onClick={() => !isPageLoading && handleToggleExpand(p.id)}
+                          disabled={isPageLoading}
                         >
-                          {expandedProductId === p.id ? "Collapse" : "View Details"}
+                          {isPageLoading ? "Loading..." : expandedProductId === p?.id ? "Collapse" : "View Details"}
                         </button>
                       </div>
                     </td>
@@ -216,31 +274,37 @@ const Home = () => {
                       <div className="table-actions">
                         <button 
                           className="btn-action btn-edit"
-                          onClick={() => fetchProductParams(p.id)}
+                          onClick={() => !isPageLoading && fetchProductParams(p.id)}
+                          disabled={isPageLoading}
                         >
-                          Edit
+                          {isPageLoading ? "..." : "Edit"}
                         </button>
                       </div>
                     </td>
                     <td>
                       <div className="table-actions">
-                        <Link to={`/parameters/${p.id}`}>
-                          <button className="btn-action btn-edit-values">Edit Values</button>
-                        </Link>
+                        {isPageLoading ? (
+                          <button className="btn-action btn-edit-values" disabled>...</button>
+                        ) : (
+                          <Link to={`/parameters/${p.id}`}>
+                            <button className="btn-action btn-edit-values">Edit Values</button>
+                          </Link>
+                        )}
                       </div>
                     </td>
                     <td>
                       <div className="table-actions">
                         <button 
                           className="btn-action btn-delete"
-                          onClick={() => deleteProduct(p.id, p.name)}
+                          onClick={() => !isPageLoading && deleteProduct(p.id, p.name)}
+                          disabled={isPageLoading}
                         >
-                          Delete
+                          {isPageLoading ? "..." : "Delete"}
                         </button>
                       </div>
                     </td>
                   </tr>
-                  {expandedProductId === p.id && <ExpandableRow product={p} />}
+                  {p && expandedProductId === p.id && !isPageLoading && <ExpandableRow product={p} />}
                 </React.Fragment>
               ))}
             </tbody>
@@ -258,38 +322,104 @@ const Home = () => {
       {products.length > productsPerPage && (
         <div className="pagination-container">
           <div className="pagination-info">
-            <span>Page {currentPage} of {totalPages}</span>
-            <span style={{ marginLeft: '20px' }}>
-              Showing {indexOfFirstProduct + 1} to {Math.min(indexOfLastProduct, products.length)} of {products.length} products
-            </span>
+            <span>Showing {products.length === 0 ? 0 : indexOfFirstProduct + 1}-{indexOfLastProduct} of {products.length} results</span>
+            <span style={{ marginLeft: '20px' }}>Page {currentPage} of {totalPages}</span>
           </div>
-          
+
           <div className="pagination-controls">
+            <label style={{ marginRight: 8 }}>Results per page:</label>
+            <select value={productsPerPage} onChange={handlePerPageChange} disabled={isPageLoading}>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+
+            <button 
+              className="pagination-button"
+              onClick={goToFirstPage}
+              disabled={currentPage === 1 || isPageLoading}
+              style={{ marginLeft: 12 }}
+            >
+              First
+            </button>
             <button 
               className="pagination-button"
               onClick={goToPreviousPage} 
-              disabled={currentPage === 1}
+              disabled={currentPage === 1 || isPageLoading}
             >
               Previous
             </button>
-            
-            {Array.from({ length: totalPages }, (_, index) => index + 1).map((pageNumber) => (
+
+            {visiblePageButtons[0] > 1 && (
+              <>
+                <button
+                  className={`pagination-button ${currentPage === 1 ? 'active' : ''}`}
+                  onClick={() => goToPage(1)}
+                  disabled={isPageLoading}
+                >
+                  1
+                </button>
+                {visiblePageButtons[0] > 2 && <span className="pagination-ellipsis">…</span>}
+              </>
+            )}
+
+            {visiblePageButtons.map((pageNumber) => (
               <button
                 key={pageNumber}
                 className={`pagination-button ${currentPage === pageNumber ? 'active' : ''}`}
                 onClick={() => goToPage(pageNumber)}
+                disabled={isPageLoading}
               >
                 {pageNumber}
               </button>
             ))}
-            
+
+            {visiblePageButtons[visiblePageButtons.length - 1] < totalPages && (
+              <>
+                {visiblePageButtons[visiblePageButtons.length - 1] < totalPages - 1 && (
+                  <span className="pagination-ellipsis">…</span>
+                )}
+                <button
+                  className={`pagination-button ${currentPage === totalPages ? 'active' : ''}`}
+                  onClick={() => goToPage(totalPages)}
+                  disabled={isPageLoading}
+                >
+                  {totalPages}
+                </button>
+              </>
+            )}
+
             <button 
               className="pagination-button"
               onClick={goToNextPage} 
-              disabled={currentPage === totalPages}
+              disabled={currentPage === totalPages || isPageLoading}
             >
               Next
             </button>
+            <button 
+              className="pagination-button"
+              onClick={goToLastPage}
+              disabled={currentPage === totalPages || isPageLoading}
+            >
+              Last
+            </button>
+
+            <div style={{ marginLeft: 16 }}>
+              <label style={{ marginRight: 8 }}>Jump to page:</label>
+              <input
+                type="number"
+                min={1}
+                max={totalPages}
+                value={currentPage}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value || "1", 10);
+                  if (!Number.isNaN(v)) goToPage(v);
+                }}
+                style={{ width: 70 }}
+                disabled={isPageLoading}
+              />
+            </div>
           </div>
         </div>
       )}
