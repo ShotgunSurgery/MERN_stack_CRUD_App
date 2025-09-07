@@ -1,5 +1,87 @@
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
+import "../styles/NavBar.css";
 
+
+export default function NavBar() {
+  const location = useLocation();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
+  return (
+    <nav className="navbar">
+      <Link to="/" className="navbar-logo">
+        Windals Precision Pvt. Ltd.
+      </Link>
+      
+      {/* Desktop Navigation */}
+      <div className="navbar-links">
+        <Link 
+          to="/" 
+          className={`navbar-link ${location.pathname === "/" ? "active" : ""}`}
+        >
+          Home
+        </Link>
+        <Link 
+          to="/createProduct" 
+          className={`navbar-link ${location.pathname === "/createProduct" ? "active" : ""}`}
+        >
+          Create Product
+        </Link>
+        <Link 
+          to="/addStation" 
+          className={`navbar-link ${location.pathname === "/addStation" ? "active" : ""}`}
+        >
+          Add Station
+        </Link>
+      </div>
+
+      {/* Mobile Menu Toggle */}
+      <button 
+        className="navbar-mobile-toggle"
+        onClick={toggleMobileMenu}
+        aria-label="Toggle mobile menu"
+      >
+        Menu
+      </button>
+
+      {/* Mobile Navigation */}
+      <div className={`navbar-mobile-menu ${isMobileMenuOpen ? "open" : ""}`}>
+        <div className="navbar-mobile-links">
+          <Link 
+            to="/" 
+            className="navbar-mobile-link"
+            onClick={closeMobileMenu}
+          >
+            Home
+          </Link>
+          <Link 
+            to="/createProduct" 
+            className="navbar-mobile-link"
+            onClick={closeMobileMenu}
+          >
+            Create Product
+          </Link>
+          <Link 
+            to="/addStation" 
+            className="navbar-mobile-link"
+            onClick={closeMobileMenu}
+          >
+            Add Station
+          </Link>
+        </div>
+      </div>
+    </nav>
+  );
+}
+=======
 export default function NavBar(){
      return (
     <nav style={styles.nav}>
@@ -31,3 +113,4 @@ const styles = {
   links: { display: "flex", gap: "15px" },
   link: { color: "white", textDecoration: "none" }
 };
+
