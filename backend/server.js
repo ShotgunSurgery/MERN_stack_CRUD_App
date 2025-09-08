@@ -12,7 +12,7 @@ import userRoutes from "./routes/userRoutes.js";
 import workerAllocationRoutes from "./routes/workerAllocationRoute.js";
 
 import shiftRoute from "./routes/shifts.js";
-
+import productNameRoutes from "./routes/productNameRoutes.js";
 
 dotenv.config();
 
@@ -120,6 +120,7 @@ app.get("/api/db-test", async (req, res) => {
 });
 
 // Mount product routes -> the below is the base route
+app.use("/api/productNames", productNameRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/stations", stationRoutes);
 app.use("/api/users", userRoutes);

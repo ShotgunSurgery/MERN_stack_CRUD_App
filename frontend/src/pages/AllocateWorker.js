@@ -1,316 +1,193 @@
-import React, { useEffect, useState } from "react";
-import "../styles/shared.css";
+import React, { useEffect, useMemo, useState } from "react";
+
+const API_BASE = "http://localhost:5000/api";
 
 const AllocateWorker = () => {
-  const [selectedDate, setSelectedDate] = useState("");
+  const [date, setDate] = useState("");
   const [products, setProducts] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState("");
   const [stations, setStations] = useState([]);
   const [workers, setWorkers] = useState([]);
-  const [selectedValue, setSelectedValue] = useState("");
-  const [allocations, setAllocations] = useState({}); // Track worker allocations per station {stationId: [workerIds]}
-  const [existingAllocations, setExistingAllocations] = useState({}); // Load existing allocations
+  // allocations state: { [stationId]: number[] }
+  const [allocations, setAllocations] = useState({});
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-  // Fetch stations
+  // Fetch products and workers on mount
   useEffect(() => {
-    const fetchStations = async () => {
+    const fetchInit = async () => {
       try {
-        const res = await fetch("http://localhost:5000/api/stations");
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setStations(data);
-        } else {
-          setStations([]);
-        }
-      } catch (err) {
-        console.error("Error fetching stations:", err);
-        setStations([]);
+        setError("");
+        const [prodRes, usersRes] = await Promise.all([
+          fetch(`${API_BASE}/productNames`),
+          fetch(`${API_BASE}/users`)
+        ]);
+
+        const prodOk = prodRes.ok ? await prodRes.json() : [];
+        const usersOk = usersRes.ok ? await usersRes.json() : [];
+        setProducts(Array.isArray(prodOk) ? prodOk : []);
+        // Map workers to id and full name (no nickname)
+        const mappedUsers = Array.isArray(usersOk)
+          ? usersOk.map((u) => ({ id: u.id, name: `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim() }))
+          : [];
+        setWorkers(mappedUsers);
+      } catch (e) {
+        setError("Failed to load products or users");
       }
     };
-    fetchStations();
+    fetchInit();
   }, []);
 
-  // Fetch products
+  // Fetch stations when product changes
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchStations = async () => {
+      if (!selectedProduct) { setStations([]); return; }
       try {
         setLoading(true);
-        setError(null);
-        const res = await fetch(
-          "http://localhost:5000/api/products/all-with-details"
-        );
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        const data = await res.json();
-        if (Array.isArray(data)) {
-          setProducts(data);
-        } else {
-          setError("Invalid data format received from server");
-          setProducts([]);
-        }
-      } catch (err) {
-        setError(err.message);
-        setProducts([]);
+        setError("");
+        const res = await fetch(`${API_BASE}/stations/by-product/${encodeURIComponent(selectedProduct)}`);
+        const data = res.ok ? await res.json() : [];
+        setStations(Array.isArray(data) ? data : []);
+      } catch (e) {
+        setStations([]);
+        setError("Failed to load stations");
       } finally {
         setLoading(false);
       }
     };
-    fetchProducts();
-  }, []);
+    fetchStations();
+  }, [selectedProduct]);
 
-  // Fetch workers
+  // Prefill allocations from server for selected date + product
   useEffect(() => {
-    const fetchWorkers = async () => {
+    const fetchAllocations = async () => {
+      if (!date || !selectedProduct) { setAllocations({}); return; }
       try {
-        console.log("Fetching workers...");
-        const res = await fetch("http://localhost:5000/api/users");
-        console.log("Workers response status:", res.status);
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        const data = await res.json();
-        console.log("Workers data received:", data);
-        if (Array.isArray(data)) {
-          setWorkers(data);
-          console.log("Workers set successfully:", data.length, "workers");
-        } else {
-          console.log("Workers data is not an array:", data);
-          setWorkers([]);
-        }
-      } catch (err) {
-        console.error("Error fetching workers:", err);
-        setWorkers([]);
+        const res = await fetch(`${API_BASE}/worker-allocations?date=${encodeURIComponent(date)}&product=${encodeURIComponent(selectedProduct)}`);
+        const data = res.ok ? await res.json() : {};
+        setAllocations(typeof data === 'object' && data !== null ? data : {});
+      } catch (e) {
+        // ignore
       }
     };
-    fetchWorkers();
-  }, []);
+    fetchAllocations();
+  }, [date, selectedProduct]);
 
-  const handleDateChange = (e) => {
-    const date = e.target.value;
-    setSelectedDate(date);
-    if (date) {
-      loadExistingAllocations(date);
-    } else {
-      setExistingAllocations({});
-      setAllocations({});
-    }
-  };
-
-  // Load existing allocations for a specific date
-  const loadExistingAllocations = async (date) => {
-    try {
-      const res = await fetch(`http://localhost:5000/api/worker-allocations?date=${date}`);
-      if (res.ok) {
-        const data = await res.json();
-        console.log("Existing allocations loaded:", data);
-        
-        // Group allocations by station_id
-        const groupedAllocations = {};
-        data.forEach(allocation => {
-          if (!groupedAllocations[allocation.station_id]) {
-            groupedAllocations[allocation.station_id] = [];
-          }
-          groupedAllocations[allocation.station_id].push(allocation.user_id);
-        });
-        
-        setExistingAllocations(groupedAllocations);
-        setAllocations(groupedAllocations);
-      } else {
-        console.log("No existing allocations found for date:", date);
-        setExistingAllocations({});
-        setAllocations({});
-      }
-    } catch (err) {
-      console.error("Error loading existing allocations:", err);
-      setExistingAllocations({});
-      setAllocations({});
-    }
-  };
-
-  const handleChange = (e) => {
-    setSelectedValue(e.target.value);
-  };
-
-  const handleWorkerAllocation = (stationId, workerId, isChecked) => {
-    setAllocations(prev => {
-      const currentWorkers = prev[stationId] || [];
-      let updatedWorkers;
-      
-      if (isChecked) {
-        // Add worker if not already present
-        updatedWorkers = [...currentWorkers, workerId];
-      } else {
-        // Remove worker
-        updatedWorkers = currentWorkers.filter(id => id !== workerId);
-      }
-      
-      return {
-        ...prev,
-        [stationId]: updatedWorkers
-      };
+  const handleWorkerToggle = (stationId, workerId) => {
+    setAllocations((prev) => {
+      const current = Array.isArray(prev[stationId]) ? prev[stationId] : [];
+      const next = current.includes(workerId)
+        ? current.filter((id) => id !== workerId)
+        : [...current, workerId];
+      return { ...prev, [stationId]: next };
     });
   };
 
   const saveAllocations = async () => {
-    if (!selectedDate) {
-      alert("Please select a date first");
-      return;
-    }
-
-    // First, delete existing allocations for this date
+    if (!date || !selectedProduct) { alert("Please select date and product"); return; }
     try {
-      const deleteRes = await fetch(`http://localhost:5000/api/worker-allocations?date=${selectedDate}`, {
-        method: "DELETE"
-      });
-      console.log("Delete existing allocations response:", deleteRes.status);
-    } catch (err) {
-      console.log("No existing allocations to delete or error:", err);
-    }
-
-    // Prepare new allocation data
-    const allocationData = [];
-    Object.entries(allocations).forEach(([stationId, workerIds]) => {
-      workerIds.forEach(workerId => {
-        allocationData.push({
-          station_id: parseInt(stationId),
-          user_id: parseInt(workerId),
-          allocation_date: selectedDate,
-          start_time: "08:00:00", // Default start time
-          end_time: "16:00:00",   // Default end time
-          notes: `Allocated on ${selectedDate}`
-        });
-      });
-    });
-
-    if (allocationData.length === 0) {
-      alert("No workers selected for allocation");
-      return;
-    }
-
-    try {
-      setSaving(true);
-      const res = await fetch("http://localhost:5000/api/worker-allocations", {
+      setLoading(true);
+      setError("");
+      const res = await fetch(`${API_BASE}/worker-allocations`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ allocations: allocationData }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ date, product: selectedProduct, allocations })
       });
-
-      const result = await res.json();
-      
-      if (res.ok) {
-        alert("Worker allocations saved successfully!");
-        setExistingAllocations(allocations); // Update existing allocations
-      } else {
-        alert("Error saving allocations: " + (result.error || "Unknown error"));
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Failed to save allocations");
       }
-    } catch (err) {
-      console.error("Error saving allocations:", err);
-      alert("Error saving allocations: " + err.message);
+      alert("Allocations saved successfully");
+    } catch (e) {
+      console.error(e);
+      setError(e.message);
+      alert(`Error saving allocations: ${e.message}`);
     } finally {
-      setSaving(false);
+      setLoading(false);
     }
   };
 
+  const productOptions = useMemo(() => products.map((p) => p.name), [products]);
+
   return (
-    <div className="main-content">
-      <div className="allocate-worker-header">
-        <h1 className="allocate-worker-title">Allocate Station to Worker</h1>
+    <div style={{ padding: 16 }}>
+      <h1>Allocate Stations to Workers</h1>
+
+      <div style={{ display: "flex", gap: 16, alignItems: "center", marginBottom: 16 }}>
+        <div>
+          <label htmlFor="alloc-date" style={{ display: "block", marginBottom: 4 }}>Date</label>
+          <input id="alloc-date" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </div>
+        <div>
+          <label htmlFor="product" style={{ display: "block", marginBottom: 4 }}>Product</label>
+          <select id="product" value={selectedProduct} onChange={(e) => setSelectedProduct(e.target.value)}>
+            <option value="">Select product</option>
+            {productOptions.map((name) => (
+              <option key={name} value={name}>{name}</option>
+            ))}
+          </select>
+        </div>
+        <button onClick={saveAllocations} disabled={loading || !date || !selectedProduct}>
+          {loading ? "Saving..." : "Save Allocations"}
+        </button>
       </div>
 
-      <div className="date-input-section">
-        <label className="date-input-label">Select Date</label>
-        <input
-          type="date"
-          className="date-input"
-          value={selectedDate}
-          onChange={handleDateChange}
-        />
+      {error && <div style={{ color: "red", marginBottom: 12 }}>{error}</div>}
+
+      {stations.length === 0 && selectedProduct && (
+        <div>No stations found for this product.</div>
+      )}
+
+      <div style={{ display: "grid", gap: 12 }}>
+        {stations.map((st) => (
+          <StationAllocationRow
+            key={st.id}
+            station={st}
+            workers={workers}
+            selectedWorkerIds={Array.isArray(allocations[st.id]) ? allocations[st.id] : []}
+            onToggle={(workerId) => handleWorkerToggle(st.id, workerId)}
+          />
+        ))}
       </div>
+    </div>
+  );
+};
 
-       {loading && <p>Loading products...</p>}
-       {error && <p style={{ color: "red" }}>{error}</p>}
-       
-       <div style={{ marginBottom: "20px", padding: "10px", backgroundColor: "#f8f9fa", borderRadius: "5px" }}>
-         <p><strong>Debug Info:</strong></p>
-         <p>Workers loaded: {workers.length}</p>
-         <p>Stations loaded: {stations.length}</p>
-         <p>Selected date: {selectedDate || "Not selected"}</p>
-       </div>
-
-      <div>
-        <label htmlFor="product_dropdown">Select Product:</label>
-        <select
-          id="product_dropdown"
-          value={selectedValue}
-          onChange={handleChange}
-        >
-          <option value="">-- Select a product --</option>
-          {products.map((product, index) => (
-            <option key={index} value={product.id || product.name}>
-              {product.name || JSON.stringify(product)}
-            </option>
-          ))}
-        </select>
+const StationAllocationRow = ({ station, workers, selectedWorkerIds, onToggle }) => {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ border: "1px solid #ccc", borderRadius: 6, padding: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div>
+          <div style={{ fontWeight: 600 }}>{station.station_name}</div>
+          <div style={{ fontSize: 12, color: "#666" }}>Station #{station.station_number}</div>
+        </div>
+        <div className="relative inline-block">
+          <button className="px-4 py-2 bg-gray-200 rounded" onClick={() => setOpen(!open)}>
+            Select Workers
+          </button>
+          {open && (
+            <div className="absolute mt-2 w-64 bg-white border rounded shadow z-10" style={{ maxHeight: 240, overflowY: "auto" }}>
+              {workers.map((w) => (
+                <label key={w.id} className="flex items-center px-2 py-1 hover:bg-gray-100 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="mr-2"
+                    checked={selectedWorkerIds.includes(w.id)}
+                    onChange={() => onToggle(w.id)}
+                  />
+                  {w.name}
+                </label>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
-
-       <div className="allocations-table-container">
-         <table className="allocations-table">
-           <thead>
-             <tr>
-               <th>Sr no.</th>
-               <th>Station Name</th>
-               <th>Available Workers</th>
-             </tr>
-           </thead>
-           <tbody>
-             {stations.map((station, index) => (
-               <tr key={station.id}>
-                 <td>{index + 1}</td>
-                 <td>{station.station_name}</td>
-                 <td>
-                   <div className="workers-checkbox-container">
-                     {workers.length > 0 ? (
-                       workers.map((worker) => (
-                         <label key={worker.id} className="worker-checkbox-label">
-                           <input
-                             type="checkbox"
-                             className="worker-checkbox"
-                             checked={allocations[station.id]?.includes(worker.id) || false}
-                             onChange={(e) => handleWorkerAllocation(station.id, worker.id, e.target.checked)}
-                           />
-                           <span className="worker-name">
-                             {worker.first_name} {worker.last_name} ({worker.designation})
-                           </span>
-                         </label>
-                       ))
-                     ) : (
-                       <p>No workers available</p>
-                     )}
-                   </div>
-                 </td>
-               </tr>
-             ))}
-           </tbody>
-         </table>
-       </div>
-
-       <div className="save-allocations-section">
-         <button 
-           className="btn-save-allocations" 
-           onClick={saveAllocations}
-           disabled={saving || !selectedDate}
-         >
-           {saving ? "Saving..." : "Save Allocations"}
-         </button>
-       </div>
+      {selectedWorkerIds.length > 0 && (
+        <div style={{ marginTop: 8, fontSize: 14 }}>
+          Selected: {workers.filter(w => selectedWorkerIds.includes(w.id)).map(w => w.name).join(", ")}
+        </div>
+      )}
     </div>
   );
 };

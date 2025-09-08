@@ -1,35 +1,18 @@
-import express from 'express';
-import {
-  createAllocations,
-  getAllocations,
-  getAllocationById,
-  updateAllocation,
-  deleteAllocation,
-  getAvailableWorkers,
-  deleteAllocationsByDate
-} from '../controllers/workerAllocationController.js';
+import express from "express";
+import { ensureWorkerAllocationsTable, getAllocations, saveAllocations } from "../controllers/workerAllocationController.js";
 
 const router = express.Router();
 
-// Create multiple worker allocations
-router.post('/', createAllocations);
+// Ensure table exists once when router is imported
+ensureWorkerAllocationsTable().catch((e) => {
+  console.error("Failed ensuring worker_allocations table:", e);
+});
 
-// Get all allocations (with optional filters)
-router.get('/', getAllocations);
+// GET /api/worker-allocations?date=YYYY-MM-DD&product=ProductName
+router.get("/", getAllocations);
 
-// Get available workers for a specific date and station
-router.get('/available-workers', getAvailableWorkers);
-
-// Get allocation by ID
-router.get('/:id', getAllocationById);
-
-// Update allocation
-router.put('/:id', updateAllocation);
-
-// Delete allocation
-router.delete('/:id', deleteAllocation);
-
-// Delete allocations by date
-router.delete('/', deleteAllocationsByDate);
+// POST /api/worker-allocations
+// body: { date, product, allocations: { [stationId]: number[] } }
+router.post("/", saveAllocations);
 
 export default router;
