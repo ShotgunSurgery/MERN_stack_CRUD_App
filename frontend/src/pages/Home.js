@@ -2,8 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import "../styles/Home.css";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
-import { FaEye, FaPen, FaTrash } from 'react-icons/fa';
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+// Removed unused icon and DnD imports
 
 const ExpandableRow = ({ product }) => {
   return (
@@ -51,23 +50,13 @@ const ExpandableRow = ({ product }) => {
                     <td>{paramValue.record_name}</td>
                     <td>{paramValue.parameter_name}</td>
                     <td>{paramValue.value}</td>
-
                   </tr>
-                </thead>
-                <tbody>
-                  {product.parameterValues.map((paramValue) => (
-                    <tr key={paramValue.id}>
-                      <td>{paramValue.record_name}</td>
-                      <td>{paramValue.parameter_name}</td>
-                      <td>{paramValue.value}</td>
-                    </tr>
-                  ))}
-                </tbody>
+                ))}
+              </tbody>
               </table>
             ) : (
               <p>No parameter values found.</p>
             )}
-          </div>
         </div>
       </td>
     </tr>
