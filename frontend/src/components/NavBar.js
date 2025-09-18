@@ -53,6 +53,12 @@ export default function NavBar() {
         >
           Shift Configuration
         </Link>
+        <Link
+          to="/allocateWorker"
+          className={`navbar-link ${location.pathname === "/allocateWorker" ? "active" : ""}`}
+        >
+          Allocate Worker
+        </Link>
       </div>
 
       {/* Mobile Menu Toggle */}
