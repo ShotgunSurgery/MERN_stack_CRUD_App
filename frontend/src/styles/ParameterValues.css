@@ -1,0 +1,277 @@
+/* Parameter Values Page Specific Styles */
+
+/* Page Header */
+.parameter-values-header {
+  margin-bottom: 2rem;
+}
+
+.parameter-values-title {
+  color: var(--primary-color);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+/* Action Buttons */
+.parameter-values-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.btn-add-row {
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 10px 20px;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-add-row:hover {
+  background-color: var(--background-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+
+.btn-save-values {
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 12px 24px;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 16px;
+  min-width: 150px;
+}
+
+.btn-save-values:hover {
+  background-color: var(--background-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* Values Table */
+.values-table-container {
+  background-color: var(--secondary-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 2rem;
+}
+
+.values-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.values-table th {
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+  padding: 15px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.values-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+  background-color: var(--secondary-color);
+}
+
+.values-table tbody tr {
+  transition: var(--transition);
+}
+
+.values-table tbody tr:hover {
+  background-color: var(--background-hover);
+}
+
+.values-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Drag Handle */
+.values-drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  font-size: 18px;
+  text-align: center;
+  user-select: none;
+  padding: 8px;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+
+.values-drag-handle:hover {
+  background-color: var(--primary-color-light);
+  color: var(--primary-color);
+}
+
+.values-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Row Number */
+.values-row-number {
+  text-align: center;
+  font-weight: 600;
+  color: var(--text-color);
+  background-color: var(--background-light);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto;
+}
+
+/* Form Inputs in Table */
+.values-table-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 13px;
+  transition: var(--transition);
+  background-color: var(--secondary-color);
+}
+
+.values-table-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color-light);
+}
+
+.values-table-input::placeholder {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+/* Delete Button */
+.btn-delete-row {
+  background-color: var(--danger-color);
+  color: var(--secondary-color);
+  border: none;
+  padding: 8px 12px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 14px;
+  transition: var(--transition);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-delete-row:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Empty State */
+.empty-values {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-muted);
+  background-color: var(--background-light);
+  border-radius: var(--border-radius-lg);
+  border: 2px dashed var(--border-color);
+}
+
+.empty-values h3 {
+  color: var(--text-light);
+  margin-bottom: 1rem;
+}
+
+.empty-values p {
+  font-size: 16px;
+  margin-bottom: 1.5rem;
+}
+
+/* Drag and Drop States */
+.values-dragging {
+  opacity: 0.5;
+  transform: rotate(5deg);
+}
+
+.values-drag-over {
+  background-color: var(--primary-color-light);
+  border: 2px dashed var(--primary-color);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .values-table-container {
+    overflow-x: auto;
+  }
+  
+  .values-table {
+    min-width: 800px;
+  }
+}
+
+@media (max-width: 768px) {
+  .parameter-values-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .btn-add-row,
+  .btn-save-values {
+    width: 100%;
+  }
+  
+  .values-table th,
+  .values-table td {
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+  
+  .values-table-input {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .parameter-values-title {
+    font-size: 1.5rem;
+  }
+  
+  .values-table {
+    min-width: 600px;
+  }
+  
+  .values-table th,
+  .values-table td {
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+  
+  .values-table-input {
+    font-size: 11px;
+    padding: 4px 6px;
+  }
+  
+  .btn-delete-row {
+    padding: 6px 8px;
+    font-size: 12px;
+  }
+}

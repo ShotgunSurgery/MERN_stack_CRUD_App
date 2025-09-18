@@ -515,72 +515,39 @@ const AddStation = () => {
   };
 
   return (
-    <div>
-      <h1 className="header">Add Station</h1>
+    <div className="main-content">
+      <div className="add-station-header">
+        <h1 className="add-station-title">Add Station</h1>
+      </div>
 
-      {/* Product Dropdown */}
-      <div style={{ position: "relative", width: "250px", marginTop: "20px" }}>
+      {/* Product Selection Section */}
+      <div className="product-selection-section">
+        <label className="product-selection-label">Select Product</label>
+        <div className="product-search-container">
         <input
           type="text"
+            className="product-search-input"
           placeholder="Search products..."
           value={search}
           onChange={handleSearchChange}
           onClick={handleSearchClick}
           onFocus={handleSearchFocus}
-          style={{
-            width: "100%",
-            padding: "10px",
-            border: "1px solid #ccc",
-            borderRadius: "4px",
-          }}
         />
 
         {open && (
-          <ul
-            style={{
-              position: "absolute",
-              top: "40px",
-              left: 0,
-              width: "100%",
-              maxHeight: "150px",
-              overflowY: "auto",
-              listStyle: "none",
-              margin: 0,
-              padding: 0,
-              border: "1px solid #ccc",
-              background: "white",
-              borderRadius: "4px",
-              zIndex: 1000,
-              boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
-            }}
-          >
+            <ul className="product-dropdown">
             {filteredProducts.length > 0 ? (
               filteredProducts.map((product, index) => (
                 <li
                   key={index}
+                    className={`product-dropdown-item ${selected === product ? "selected" : ""}`}
                   onClick={() => handleProductSelect(product)}
-                  style={{
-                    padding: "10px",
-                    cursor: "pointer",
-                    borderBottom: "1px solid #eee",
-                    backgroundColor: selected === product ? "#e3f2fd" : "white",
-                    fontWeight: selected === product ? "bold" : "normal",
-                  }}
-                  onMouseEnter={(e) => {
-                    e.target.style.backgroundColor = "#f5f5f5";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.target.style.backgroundColor =
-                      selected === product ? "#e3f2fd" : "white";
-                  }}
                 >
                   {product}
                 </li>
               ))
             ) : (
-              <li
-                style={{ padding: "10px", color: "#888", fontStyle: "italic" }}
-              >
+                <li className="product-dropdown-empty">
                 {search ? "No products found" : "No products available"}
               </li>
             )}
@@ -588,57 +555,84 @@ const AddStation = () => {
         )}
       </div>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+        {error && <div className="error-message">{error}</div>}
       {selected && (
-        <div
-          style={{
-            marginTop: "10px",
-            padding: "8px",
-            backgroundColor: "#e8f5e8",
-            borderRadius: "4px",
-            border: "1px solid #4caf50",
-          }}
-        >
+          <div className="selected-product-display">
           <strong>Selected Product:</strong> {selected}
         </div>
       )}
+      </div>
 
-      {/* Inputs */}
+      {/* Station Form Section */}
+      <div className="station-form-section">
+        <h3 className="station-form-title">Station Configuration</h3>
+        
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Station Number</label>
       <input
         type="number"
+              className="form-input"
         placeholder="Enter Station Number"
         value={stationNumber}
         onChange={(e) => setStationNumber(e.target.value)}
       />
+          </div>
+          
+          <div className="form-group">
+            <label className="form-label">Station Name</label>
       <input
         type="text"
+              className="form-input"
         placeholder="Enter Station Name"
         value={stationName}
         onChange={(e) => setStationName(e.target.value)}
       />
+          </div>
+        </div>
+        
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Cycle Time</label>
       <input
         type="number"
+              className="form-input"
         placeholder="Cycle time"
         value={cycleTime}
         onChange={(e) => setCycleTime(e.target.value)}
       />
+          </div>
+          
+          <div className="form-group">
+            <label className="form-label">Daily Count</label>
       <input
         type="number"
+              className="form-input"
         placeholder="Daily Count"
         value={dailyCount}
         onChange={(e) => setDailyCount(e.target.value)}
       />
+          </div>
+        </div>
+        
+        <div className="form-row">
+          <div className="form-group">
+            <label className="form-label">Products/Hour</label>
       <input
         type="number"
+              className="form-input"
         placeholder="Products/Hour"
         value={productsPerHour}
         onChange={(e) => setProductsPerHour(e.target.value)}
       />
+          </div>
+        </div>
 
-      {/* Report Type Dropdown */}
-      <div>
-        <h3>Select a Report Type</h3>
+        {/* Report Type Section */}
+        <div className="report-type-section">
+          <h3 className="report-type-title">Select a Report Type</h3>
         <select
+            className="form-select"
           value={Typeselected}
           onChange={(e) => setTypeSelected(e.target.value)}
         >
@@ -647,76 +641,79 @@ const AddStation = () => {
           <option value="Pending">Pending</option>
           <option value="In process">In process</option>
         </select>
-        {Typeselected && <p>You selected: {Typeselected}</p>}
+          {Typeselected && (
+            <div className="report-type-selected">
+              You selected: {Typeselected}
+            </div>
+          )}
       </div>
 
-      {/* Save button */}
+        {/* Action Buttons */}
+        <div className="action-buttons">
       <button
+            className="btn-save-station"
         onClick={handleSave}
         disabled={isLoading}
-        style={{
-          opacity: isLoading ? 0.6 : 1,
-          cursor: isLoading ? "not-allowed" : "pointer",
-        }}
       >
         {isLoading ? "Saving..." : "Save Station"}
       </button>
+        </div>
+      </div>
 
-      {/* checkbox for multiple machines */}
-
-      <div className="p-4">
-        <label className="flex items-center space-x-2">
+      {/* Multiple Machines Section */}
+      <div className="multiple-machines-section">
+        <div className="multiple-machines-header">
           <input
             type="checkbox"
+            className="multiple-machines-checkbox"
             onChange={handleCheckBox}
             checked={isChecked}
-            className="w-4 h-4"
           />
-          <span>Multiple Machines</span>
-        </label>
+          <label className="multiple-machines-label">Multiple Machines</label>
+        </div>
 
-        {/* here react checks if ischecked if true then then renders the front if false
-        then the && condition gets falsed and nothing is rendered */}
         {isChecked && (
-          <div className="mt-4 space-y-4">
-            <table className="border border-gray-400 w-full text-left">
+          <div>
+            <div className="machines-table-container">
+              <table className="machines-table">
               <thead>
-                <tr className="bg-gray-200">
-                  <th className="border p-2">Machine Name</th>
-                  <th className="border p-2">Cycle Time</th>
-                  <th className="border p-2">Daily Count</th>
-                  <th className="border p-2">Product Per hour</th>
-                  <th className="border p-2">Delete</th>
+                  <tr>
+                    <th>Machine Name</th>
+                    <th>Cycle Time</th>
+                    <th>Daily Count</th>
+                    <th>Product Per hour</th>
+                    <th>Delete</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.id}>
-                    <td className="border p-2">
+                      <td>
                       <input
                         type="text"
+                          className="machine-input"
                         value={row.machine}
                         onChange={(e) =>
                           handleInputChange(row.id, "machine", e.target.value)
                         }
-                        className="border p-1 w-full"
                         placeholder="Enter machine name"
                       />
                     </td>
-                    <td className="border p-2">
+                      <td>
                       <input
                         type="number"
+                          className="machine-input"
                         value={row.cycleTime}
                         onChange={(e) =>
                           handleInputChange(row.id, "cycleTime", e.target.value)
                         }
-                        className="border p-1 w-full"
                         placeholder="Cycle time"
                       />
                     </td>
-                    <td className="border p-2">
+                      <td>
                       <input
                         type="number"
+                          className="machine-input"
                         value={row.dailyCount}
                         onChange={(e) =>
                           handleInputChange(
@@ -725,24 +722,23 @@ const AddStation = () => {
                             e.target.value
                           )
                         }
-                        className="border p-1 w-full"
                         placeholder="Daily count"
                       />
                     </td>
-                    <td className="border p-2">
+                      <td>
                       <input
                         type="number"
+                          className="machine-input"
                         value={row.perHour}
                         onChange={(e) =>
                           handleInputChange(row.id, "perHour", e.target.value)
                         }
-                        className="border p-1 w-full"
                         placeholder="Products/hour"
                       />
                     </td>
-                    <td className="border p-2">
+                      <td>
                       <button
-                        className="px-3 py-1 bg-red-500 text-white rounded"
+                          className="btn-delete-machine"
                         onClick={() => handleDeleteRow(row.id)}
                       >
                         Delete
@@ -752,220 +748,99 @@ const AddStation = () => {
                 ))}
               </tbody>
             </table>
+            </div>
 
+            <div className="action-buttons">
             <button
+                className="btn-add-machine"
               onClick={handleAddRow}
-              className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow"
             >
               Add Machine
             </button>
-            <button onClick={() => submitMachines(selected)}>Save Machines</button>
+              <button 
+                className="btn-save-machines"
+                onClick={() => submitMachines(selected)}
+              >
+                Save Machines
+              </button>
+            </div>
           </div>
         )}
       </div>
 
       {error && (
-        <div
-          style={{
-            color: "red",
-            marginTop: "10px",
-            padding: "10px",
-            backgroundColor: "#ffe6e6",
-            borderRadius: "4px",
-            border: "1px solid #ff9999",
-          }}
-        >
+        <div className="error-message">
           Error: {error}
         </div>
       )}
 
-      {/* Existing Stations Table */}
+
       {selected && (
-        <div style={{ marginTop: "30px" }}>
-          <h2>Existing Stations for {selected}</h2>
+        <div className="existing-stations-section">
+          <h2 className="existing-stations-title">Existing Stations for {selected}</h2>
           {loadingStations ? (
-            <div>
+            <div className="loading-stations">
+              <div className="spinner"></div>
               <p>Loading stations...</p>
-              <p style={{ fontSize: "12px", color: "#666" }}>
-                Debug: Fetching from /api/stations/by-product/{selected}
-              </p>
             </div>
           ) : stations.length > 0 ? (
-            <div style={{ overflowX: "auto" }}>
-              <table
-                style={{
-                  width: "100%",
-                  borderCollapse: "collapse",
-                  border: "1px solid #ddd",
-                  marginTop: "10px",
-                }}
-              >
-                <thead>
-                  <tr style={{ backgroundColor: "#f2f2f2" }}>
-                    <th
-                      style={{
-                        padding: "12px",
-                        border: "1px solid #ddd",
-                        textAlign: "center",
-                        width: "50px",
-                      }}
-                    >
-                      ⋮⋮
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        border: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      Station #
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        border: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      Station Name
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        border: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      Cycle Time
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        border: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      Daily Count
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        border: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      Products/Hour
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        border: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      Report Type
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        border: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      Parameters
-                    </th>
-                    <th
-                      style={{
-                        padding: "12px",
-                        border: "1px solid #ddd",
-                        textAlign: "left",
-                      }}
-                    >
-                      Created At
-                    </th>
+            <div>
+              <div className="stations-table-container">
+                <table className="stations-table">
+                  <thead>
+                    <tr>
+                      <th>Drag</th>
+                      <th>Station #</th>
+                      <th>Station Name</th>
+                      <th>Cycle Time</th>
+                      <th>Daily Count</th>
+                      <th>Products/Hour</th>
+                      <th>Report Type</th>
+                      <th>Parameters</th>
+                      <th>Created At</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stations.map((station, index) => (
                     <tr
                       key={station.id || index}
-                      style={{
-                        backgroundColor: index % 2 === 0 ? "#f9f9f9" : "white",
-                      }}
                       draggable={true}
                       onDragStart={(e) => handleDragStart(e, index)}
                       onDragOver={handleDragOver}
                       onDrop={(e) => handleDrop(e, index)}
                       onDragEnd={handleDragEnd}
                     >
-                      <td
-                        style={{
-                          padding: "12px",
-                          border: "1px solid #ddd",
-                          textAlign: "center",
-                          cursor: "grab",
-                          fontSize: "18px",
-                          userSelect: "none",
-                        }}
-                        onDragStart={(e) => {
-                          e.target.style.cursor = "grabbing";
-                          e.target.style.opacity = "0.5";
-                        }}
-                        onDragEnd={(e) => {
-                          e.target.style.cursor = "grab";
-                          e.target.style.opacity = "1";
-                        }}
-                      >
-                        ⋮⋮
+                        <td className="station-drag-handle">
+                          Drag
                       </td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
-                        {station.station_number}
-                      </td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
-                        {station.station_name}
-                      </td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
-                        {station.cycle_time}
-                      </td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
-                        {station.daily_count}
-                      </td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
-                        {station.products_per_hour}
-                      </td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
-                        {station.report_type}
-                      </td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
+                        <td>{station.station_number}</td>
+                        <td>{station.station_name}</td>
+                        <td>{station.cycle_time}</td>
+                        <td>{station.daily_count}</td>
+                        <td>{station.products_per_hour}</td>
+                        <td>{station.report_type}</td>
+                        <td>
                         <ParameterSelector
                           station={station}
                           parameters={parameters}
                           onParameterToggle={handleParameterToggle}
                         />
                       </td>
-                      <td style={{ padding: "12px", border: "1px solid #ddd" }}>
-                        {new Date(station.created_at).toLocaleDateString()}
-                      </td>
+                        <td>{new Date(station.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
-              <p
-                style={{
-                  marginTop: "10px",
-                  fontSize: "14px",
-                  color: "#666",
-                  fontStyle: "italic",
-                }}
-              >
-                🖱️ Drag and drop rows to reorder stations
-              </p>
+              </div>
+              <div className="drag-instructions">
+                Drag and drop rows to reorder stations
+              </div>
             </div>
           ) : (
-            <p style={{ color: "#666", fontStyle: "italic" }}>
-              No stations found for this product.
-            </p>
+            <div className="empty-stations">
+              <h3>No Stations Found</h3>
+              <p>No stations found for this product.</p>
+            </div>
           )}
         </div>
       )}

@@ -1,7 +1,11 @@
 import React, { useState, useEffect } from "react";
 import "../styles/shared.css";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+
+import "../styles/ParameterValues.css";
+
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+
 
 const ParameterValues = () => {
   const { productId } = useParams();
@@ -108,92 +112,201 @@ const ParameterValues = () => {
   };
 
   return (
-    <div className="container">
-      <div className="header">
-        <h1 className="mainhead">{productName}</h1>
-        <div>
-          <button className="btn btn-primary" onClick={addRow}>Add Row</button>
-          <button className="btn btn-primary" onClick={saveValues}>Save Values</button>
-        </div>
+    <div className="main-content">
+      <div className="parameter-values-header">
+        <h1 className="parameter-values-title">{productName}</h1>
+      </div>
+      
+      <div className="parameter-values-actions">
+        <button className="btn-add-row" onClick={addRow}>
+          Add Row
+        </button>
+        <button className="btn-save-values" onClick={saveValues}>
+          Save Values
+        </button>
       </div>
 
-      <DragDropContext onDragEnd={onDragEnd}>
-        <Droppable droppableId="rows">
-          {(provided) => (
-            <table
-              className="table"
-              {...provided.droppableProps}
-              ref={provided.innerRef}
-            >
-              <thead>
-                <tr>
-                  <td>#</td>
-                  <td>Drag</td>
-                  <td>Name</td>
-                  {parameters.map((param, index) => (
-                    <td key={index}>{param.parameterName}</td>
-                  ))}
-                  <td>Delete</td>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row, rowIndex) => (
-                  <Draggable
-                    key={rowIndex}
-                    draggableId={rowIndex.toString()}
-                    index={rowIndex}
-                  >
-                    {(provided) => (
-                      <tr ref={provided.innerRef} {...provided.draggableProps}>
-                        {/* Row number */}
-                        <td>{rowIndex + 1}</td>
+      {rows.length > 0 ? (
+        <div className="values-table-container">
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="rows">
+              {(provided) => (
+                <table
+                  className="values-table"
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                >
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>Drag</th>
+                      <th>Name</th>
+                      {parameters.map((param, index) => (
+                        <th key={index}>{param.parameterName}</th>
+                      ))}
+                      <th>Delete</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row, rowIndex) => (
+                      <Draggable
+                        key={rowIndex}
+                        draggableId={rowIndex.toString()}
+                        index={rowIndex}
+                      >
+                        {(provided) => (
+                          <tr ref={provided.innerRef} {...provided.draggableProps}>
+                            {/* Row number */}
+                            <td>
+                              <div className="values-row-number">{rowIndex + 1}</div>
+                            </td>
 
-                        {/* Drag handle */}
-                        <td
-                          {...provided.dragHandleProps}
-                          style={{ cursor: "grab" }}
-                        >
-                          ☰
-                        </td>
+                            {/* Drag handle */}
+                            <td
+                              {...provided.dragHandleProps}
+                              className="values-drag-handle"
+                            >
+                              Drag
+                            </td>
 
-                        {/* Name column */}
-                        <td>
-                          <input
-                            value={row.name || ""}
-                            onChange={(e) =>
-                              handleChange(rowIndex, "name", e.target.value)
-                            }
-                            placeholder="Enter name"
-                          />
-                        </td>
+                            {/* Name column */}
+                            <td>
+                              <input
+                                className="values-table-input"
+                                value={row.name || ""}
+                                onChange={(e) =>
+                                  handleChange(rowIndex, "name", e.target.value)
+                                }
+                                placeholder="Enter name"
+                              />
+                            </td>
 
-                        {/* Parameter value columns */}
-                        {parameters.map((param, paramIndex) => (
-                          <td key={paramIndex}>
-                            <input
-                              value={row[param.parameterName] || ""}
-                              onChange={(e) =>
-                                handleChange(rowIndex, param.parameterName, e.target.value)
-                              }
-                              placeholder={`Enter ${param.parameterName}`}
-                            />
-                          </td>
-                        ))}
+                            {/* Parameter value columns */}
+                            {parameters.map((param, paramIndex) => (
+                              <td key={paramIndex}>
+                                <input
+                                  className="values-table-input"
+                                  value={row[param.parameterName] || ""}
+                                  onChange={(e) =>
+                                    handleChange(rowIndex, param.parameterName, e.target.value)
+                                  }
+                                  placeholder={`Enter ${param.parameterName}`}
+                                />
+                              </td>
+                            ))}
 
-                        {/* Delete row */}
-                        <td>
-                          <button className="btn btn-danger" onClick={() => deleteRow(rowIndex)}>🗑️</button>
-                        </td>
-                      </tr>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </tbody>
-            </table>
-          )}
-        </Droppable>
-      </DragDropContext>
+                            {/* Delete row */}
+                            <td>
+                              <button 
+                                className="btn-delete-row"
+                                onClick={() => deleteRow(rowIndex)}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        )}
+                      </Draggable>
+                    ))}
+                    {provided.placeholder}
+                  </tbody>
+                </table>
+              )}
+            </Droppable>
+          </DragDropContext>
+        </div>
+      ) : (
+        <div className="empty-values">
+          <h3>No Values Added</h3>
+          <p>Click "Add Row" to start adding parameter values.</p>
+        </div>
+      )}
+//     <div className="container">
+//       <div className="header">
+//         <h1 className="mainhead">{productName}</h1>
+//         <div>
+//           <button className="btn btn-primary" onClick={addRow}>Add Row</button>
+//           <button className="btn btn-primary" onClick={saveValues}>Save Values</button>
+//         </div>
+//       </div>
+
+//       <DragDropContext onDragEnd={onDragEnd}>
+//         <Droppable droppableId="rows">
+//           {(provided) => (
+//             <table
+//               className="table"
+//               {...provided.droppableProps}
+//               ref={provided.innerRef}
+//             >
+//               <thead>
+//                 <tr>
+//                   <td>#</td>
+//                   <td>Drag</td>
+//                   <td>Name</td>
+//                   {parameters.map((param, index) => (
+//                     <td key={index}>{param.parameterName}</td>
+//                   ))}
+//                   <td>Delete</td>
+//                 </tr>
+//               </thead>
+//               <tbody>
+//                 {rows.map((row, rowIndex) => (
+//                   <Draggable
+//                     key={rowIndex}
+//                     draggableId={rowIndex.toString()}
+//                     index={rowIndex}
+//                   >
+//                     {(provided) => (
+//                       <tr ref={provided.innerRef} {...provided.draggableProps}>
+//                         {/* Row number */}
+//                         <td>{rowIndex + 1}</td>
+
+//                         {/* Drag handle */}
+//                         <td
+//                           {...provided.dragHandleProps}
+//                           style={{ cursor: "grab" }}
+//                         >
+//                           ☰
+//                         </td>
+
+//                         {/* Name column */}
+//                         <td>
+//                           <input
+//                             value={row.name || ""}
+//                             onChange={(e) =>
+//                               handleChange(rowIndex, "name", e.target.value)
+//                             }
+//                             placeholder="Enter name"
+//                           />
+//                         </td>
+
+//                         {/* Parameter value columns */}
+//                         {parameters.map((param, paramIndex) => (
+//                           <td key={paramIndex}>
+//                             <input
+//                               value={row[param.parameterName] || ""}
+//                               onChange={(e) =>
+//                                 handleChange(rowIndex, param.parameterName, e.target.value)
+//                               }
+//                               placeholder={`Enter ${param.parameterName}`}
+//                             />
+//                           </td>
+//                         ))}
+
+//                         {/* Delete row */}
+//                         <td>
+//                           <button className="btn btn-danger" onClick={() => deleteRow(rowIndex)}>🗑️</button>
+//                         </td>
+//                       </tr>
+//                     )}
+//                   </Draggable>
+//                 ))}
+//                 {provided.placeholder}
+//               </tbody>
+//             </table>
+//           )}
+//         </Droppable>
+//       </DragDropContext>
     </div>
   );
 };
