@@ -140,7 +140,7 @@ export const reorderProducts = async (req, res) => {
       const displayOrder = i; // Assign order based on array index
 
       await conn.query(
-        "UPDATE products SET display_order = ? WHERE id = ?",
+        "UPDATE products SET created_at = ? WHERE id = ?",
         [displayOrder, productId]
       );
     }

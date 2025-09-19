@@ -9,9 +9,10 @@ import stationRoutes from "./routes/stationRoutes.js";
 import machineRoutes from "./routes/machineRoutes.js";
 
 import userRoutes from "./routes/userRoutes.js";
+import workerAllocationRoutes from "./routes/workerAllocationRoute.js";
 
 import shiftRoute from "./routes/shifts.js";
-
+import productNameRoutes from "./routes/productNameRoutes.js";
 
 dotenv.config();
 
@@ -119,9 +120,11 @@ app.get("/api/db-test", async (req, res) => {
 });
 
 // Mount product routes -> the below is the base route
+app.use("/api/productNames", productNameRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/stations", stationRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/worker-allocations", workerAllocationRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

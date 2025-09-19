@@ -11,7 +11,7 @@ export const getAllProductsWithDetails = async (req, res) => {
       queryParams.push(`%${search}%`);
     }
 
-    query += " ORDER BY display_order ASC";
+    query += " ORDER BY created_at ASC";
 
     const [products] = await db.query(query, queryParams);
 
