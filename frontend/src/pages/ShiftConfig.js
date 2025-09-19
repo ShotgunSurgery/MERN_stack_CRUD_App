@@ -61,8 +61,7 @@ const ShiftConfig = () => {
         // create a new instance of error, and set the message to the input param 
         if (!res.ok) throw new Error("Update failed");
 
-        // .catch is a method on promises, if res fails it just returns null
-        const updated = await res.json().catch(() => null);
+        await res.json().catch(() => null);
 
         // setShifts(shifts.map((s, i) => (i === editingIndex ? editData : s)));
 
