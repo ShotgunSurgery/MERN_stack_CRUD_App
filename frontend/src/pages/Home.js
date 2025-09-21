@@ -1,66 +1,62 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "../styles/Home.css";
-import { Link, useNavigate } from "react-router-dom";
-import { FaEye, FaPen, FaTrash } from 'react-icons/fa';
-import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+
+// Removed unused icon and DnD imports
 
 const ExpandableRow = ({ product }) => {
   return (
     <tr className="expandable-row">
       <td colSpan="7">
         <div className="expandable-content">
-          <div className="expandable-section">
-            <h3>Parameters</h3>
-            {product.parameters && product.parameters.length > 0 ? (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Max Value</th>
-                    <th>Min Value</th>
-                    <th>Unit</th>
+          <h3>Parameters</h3>
+          {product.parameters && product.parameters.length > 0 ? (
+            <table className="nested-table">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Max Value</th>
+                  <th>Min Value</th>
+                  <th>Unit</th>
+                </tr>
+              </thead>
+              <tbody>
+                {product.parameters.map((param) => (
+                  <tr key={param.id}>
+                    <td>{param.parameterName}</td>
+                    <td>{param.max_value}</td>
+                    <td>{param.min_value}</td>
+                    <td>{param.unit}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {product.parameters.map((param) => (
-                    <tr key={param.id}>
-                      <td>{param.parameterName}</td>
-                      <td>{param.max_value}</td>
-                      <td>{param.min_value}</td>
-                      <td>{param.unit}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            ) : (
-              <p>No parameters found.</p>
-            )}
-          </div>
-          <div className="expandable-section">
-            <h3>Parameter Values</h3>
-            {product.parameterValues && product.parameterValues.length > 0 ? (
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>Record Name</th>
-                    <th>Parameter Name</th>
-                    <th>Value</th>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <p>No parameters found.</p>
+          )}
+          <h3>Parameter Values</h3>
+          {product.parameterValues && product.parameterValues.length > 0 ? (
+            <table className="nested-table">
+              <thead>
+                <tr>
+                  <th>Record Name</th>
+                  <th>Parameter Name</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                {product.parameterValues.map((paramValue) => (
+                  <tr key={paramValue.id}>
+                    <td>{paramValue.record_name}</td>
+                    <td>{paramValue.parameter_name}</td>
+                    <td>{paramValue.value}</td>
                   </tr>
-                </thead>
-                <tbody>
-                  {product.parameterValues.map((paramValue) => (
-                    <tr key={paramValue.id}>
-                      <td>{paramValue.record_name}</td>
-                      <td>{paramValue.parameter_name}</td>
-                      <td>{paramValue.value}</td>
-                    </tr>
-                  ))}
-                </tbody>
+                ))}
+              </tbody>
               </table>
             ) : (
               <p>No parameter values found.</p>
             )}
-          </div>
         </div>
       </td>
     </tr>
@@ -71,6 +67,13 @@ const Home = () => {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialPage = Math.max(parseInt(searchParams.get("page") || "1", 10), 1);
+  const initialPerPage = parseInt(searchParams.get("perPage") || "15", 10);
+  const [currentPage, setCurrentPage] = useState(Number.isNaN(initialPage) ? 1 : initialPage);
+  const [productsPerPage, setProductsPerPage] = useState(Number.isNaN(initialPerPage) ? 15 : initialPerPage);
+  const [isPageLoading, setIsPageLoading] = useState(false);
+
   const [expandedProductId, setExpandedProductId] = useState(null);
   const navigate = useNavigate();
 
@@ -169,95 +172,299 @@ const Home = () => {
     fetchProducts();
   }, []);
 
+  // Keep URL in sync when page or perPage changes
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams);
+    params.set("page", String(currentPage));
+    params.set("perPage", String(productsPerPage));
+    setSearchParams(params, { replace: true });
+  }, [currentPage, productsPerPage]);
+
+  // Smooth page transition indicator
+  useEffect(() => {
+    if (loading) return;
+    setIsPageLoading(true);
+    const id = setTimeout(() => setIsPageLoading(false), 150);
+    return () => clearTimeout(id);
+  }, [currentPage, productsPerPage, loading]);
+
+  const totalPages = Math.ceil(products.length / productsPerPage); // This should be correct
+  const indexOfFirstProduct = (currentPage - 1) * productsPerPage;
+  const indexOfLastProduct = Math.min(indexOfFirstProduct + productsPerPage, products.length);
+  
+  const currentProducts = useMemo(
+    () => products.slice(indexOfFirstProduct, indexOfLastProduct),
+    [products, indexOfFirstProduct, indexOfLastProduct]
+  );
+
+  const goToPage = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage(currentPage + 1);
+    }
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage(currentPage - 1);
+    }
+  };
+
+  const goToFirstPage = () => setCurrentPage(1);
+  const goToLastPage = () => setCurrentPage(totalPages);
+
+  const handlePerPageChange = (e) => {
+    const value = parseInt(e.target.value, 10);
+    setProductsPerPage(value);
+    setCurrentPage(1);
+  };
+
+  const visiblePageButtons = useMemo(() => {
+    const pages = [];
+    const maxButtons = 5;
+    if (totalPages <= maxButtons) {
+      for (let i = 1; i <= totalPages; i += 1) pages.push(i);
+      return pages;
+    }
+    const left = Math.max(1, currentPage - 2);
+    const right = Math.min(totalPages, currentPage + 2);
+    let start = left;
+    let end = right;
+    if (right - left + 1 < maxButtons) {
+      if (currentPage <= 3) {
+        start = 1;
+        end = 5;
+      } else if (currentPage >= totalPages - 2) {
+        start = totalPages - 4;
+        end = totalPages;
+      }
+    }
+    for (let i = start; i <= end; i += 1) pages.push(i);
+    return pages;
+  }, [currentPage, totalPages]);
+
   if (loading) {
-    return <div className="loading-container"><h1 className="mainHead">Loading products...</h1></div>;
+    return (
+      <div className="main-content">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <h1>Loading products...</h1>
+        </div>
+      </div>
+    );
+
   }
 
   if (error) {
     return (
-      <div className="error-container">
-        <h1 className="mainHead">Error Loading Products</h1>
-        <p style={{ color: "red" }}>Error: {error}</p>
-        <button onClick={() => window.location.reload()}>Retry</button>
+      <div className="main-content">
+        <div className="error-container">
+          <h1>Error Loading Products</h1>
+          <div className="error-message">Error: {error}</div>
+          <button className="btn-retry" onClick={() => window.location.reload()}>Retry</button>
+        </div>
+
       </div>
     );
   }
 
   return (
-    <div className="container">
-      <div className="header">
-        <h1 className="mainHead">Existing Product</h1>
-        <Link to="/createProduct">
-          <button className="btn btn-primary">Create New +</button>
-        </Link>
+    <div className="main-content">
+      <div className="page-header">
+        <h1 className="page-title">Existing Products</h1>
+        <div className="action-buttons">
+          <Link to="/createProduct" className="btn-create">
+            Create New Product
+          </Link>
+        </div>
       </div>
+      
       {products.length > 0 ? (
-        <DragDropContext onDragEnd={onDragEnd}>
-          <table className="table">
+        <div className="products-table-container">
+          <table className="products-table">
             <thead>
               <tr>
-                <th>#</th>
-                <th>Drag</th>
                 <th>Product Name</th>
                 <th>Details</th>
-                <th>Edit Parameter</th>
-                <th>Edit Parameter Values</th>
+                <th>Edit</th>
+                <th>Edit Values</th>
                 <th>Delete</th>
               </tr>
             </thead>
-            <Droppable droppableId="products">
-              {(provided) => (
-                <tbody {...provided.droppableProps} ref={provided.innerRef}>
-                  {products.map((p, index) => (
-                    <Draggable key={p.id} draggableId={p.id.toString()} index={index}>
-                      {(provided) => (
-                        <React.Fragment>
-                          <tr
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                          >
-                            <td>{index + 1}</td>
-                            <td {...provided.dragHandleProps} style={{ cursor: "grab" }}>
-                              ☰
-                            </td>
-                            <td>{p.name}</td>
-                            <td>
-                              <button onClick={() => handleToggleExpand(p.id)} className="btn btn-secondary">
-                                <FaEye /> {expandedProductId === p.id ? "Collapse" : "View Details"}
-                              </button>
-                            </td>
-                            <td>
-                              <button onClick={() => fetchProductParams(p.id)} className="btn btn-warning">
-                                <FaPen /> Edit
-                              </button>
-                            </td>
-                            <td>
-                              <Link to={`/parameters/${p.id}`}>
-                                <button className="btn btn-info">
-                                  <FaPen /> Edit Values
-                                </button>
-                              </Link>
-                            </td>
-                            <td>
-                              <button onClick={() => deleteProduct(p.id, p.name)} className="btn btn-danger">
-                                <FaTrash /> Delete
-                              </button>
-                            </td>
-                          </tr>
-                          {expandedProductId === p.id && <ExpandableRow product={p} />}
-                        </React.Fragment>
-                      )}
-                    </Draggable>
-                  ))}
-                  {provided.placeholder}
-                </tbody>
-              )}
-            </Droppable>
+            <tbody>
+              {(isPageLoading ? Array.from({ length: Math.min(productsPerPage, products.length - indexOfFirstProduct) }) : currentProducts).map((p, i) => (
+                <React.Fragment key={p?.id || `skeleton-${i}`}>
+                  <tr>
+                    <td className="product-name">{isPageLoading ? <div className="skeleton skeleton-text" /> : p.name}</td>
+                    <td>
+                      <div className="table-actions">
+                        <button 
+                          className="btn-action btn-details"
+                          onClick={() => !isPageLoading && handleToggleExpand(p.id)}
+                          disabled={isPageLoading}
+                        >
+                          {isPageLoading ? "Loading..." : expandedProductId === p?.id ? "Collapse" : "View Details"}
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button 
+                          className="btn-action btn-edit"
+                          onClick={() => !isPageLoading && fetchProductParams(p.id)}
+                          disabled={isPageLoading}
+                        >
+                          {isPageLoading ? "..." : "Edit"}
+                        </button>
+                      </div>
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        {isPageLoading ? (
+                          <button className="btn-action btn-edit-values" disabled>...</button>
+                        ) : (
+                          <Link to={`/parameters/${p.id}`}>
+                            <button className="btn-action btn-edit-values">Edit Values</button>
+                          </Link>
+                        )}
+                      </div>
+                    </td>
+                    <td>
+                      <div className="table-actions">
+                        <button 
+                          className="btn-action btn-delete"
+                          onClick={() => !isPageLoading && deleteProduct(p.id, p.name)}
+                          disabled={isPageLoading}
+                        >
+                          {isPageLoading ? "..." : "Delete"}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  {p && expandedProductId === p.id && !isPageLoading && <ExpandableRow product={p} />}
+                </React.Fragment>
+              ))}
+            </tbody>
           </table>
-        </DragDropContext>
+        </div>
+
       ) : (
-        <p>No products found.</p>
+        <div className="empty-state">
+          <h3>No Products Found</h3>
+          <p>Start by creating your first product to get started.</p>
+          <Link to="/createProduct" className="btn-create">
+            Create Your First Product
+          </Link>
+        </div>
       )}
+      {products.length > productsPerPage && (
+        <div className="pagination-container">
+          <div className="pagination-info">
+            <span>Showing {products.length === 0 ? 0 : indexOfFirstProduct + 1}-{indexOfLastProduct} of {products.length} results</span>
+            <span style={{ marginLeft: '20px' }}>Page {currentPage} of {totalPages}</span>
+          </div>
+
+          <div className="pagination-controls">
+            <label style={{ marginRight: 8 }}>Results per page:</label>
+            <select value={productsPerPage} onChange={handlePerPageChange} disabled={isPageLoading}>
+              <option value={10}>10</option>
+              <option value={15}>15</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+
+            <button 
+              className="pagination-button"
+              onClick={goToFirstPage}
+              disabled={currentPage === 1 || isPageLoading}
+              style={{ marginLeft: 12 }}
+            >
+              First
+            </button>
+            <button 
+              className="pagination-button"
+              onClick={goToPreviousPage} 
+              disabled={currentPage === 1 || isPageLoading}
+            >
+              Previous
+            </button>
+
+            {visiblePageButtons[0] > 1 && (
+              <>
+                <button
+                  className={`pagination-button ${currentPage === 1 ? 'active' : ''}`}
+                  onClick={() => goToPage(1)}
+                  disabled={isPageLoading}
+                >
+                  1
+                </button>
+                {visiblePageButtons[0] > 2 && <span className="pagination-ellipsis">…</span>}
+              </>
+            )}
+
+            {visiblePageButtons.map((pageNumber) => (
+              <button
+                key={pageNumber}
+                className={`pagination-button ${currentPage === pageNumber ? 'active' : ''}`}
+                onClick={() => goToPage(pageNumber)}
+                disabled={isPageLoading}
+              >
+                {pageNumber}
+              </button>
+            ))}
+
+            {visiblePageButtons[visiblePageButtons.length - 1] < totalPages && (
+              <>
+                {visiblePageButtons[visiblePageButtons.length - 1] < totalPages - 1 && (
+                  <span className="pagination-ellipsis">…</span>
+                )}
+                <button
+                  className={`pagination-button ${currentPage === totalPages ? 'active' : ''}`}
+                  onClick={() => goToPage(totalPages)}
+                  disabled={isPageLoading}
+                >
+                  {totalPages}
+                </button>
+              </>
+            )}
+
+            <button 
+              className="pagination-button"
+              onClick={goToNextPage} 
+              disabled={currentPage === totalPages || isPageLoading}
+            >
+              Next
+            </button>
+            <button 
+              className="pagination-button"
+              onClick={goToLastPage}
+              disabled={currentPage === totalPages || isPageLoading}
+            >
+              Last
+            </button>
+
+            <div style={{ marginLeft: 16 }}>
+              <label style={{ marginRight: 8 }}>Jump to page:</label>
+              <input
+                type="number"
+                min={1}
+                max={totalPages}
+                value={currentPage}
+                onChange={(e) => {
+                  const v = parseInt(e.target.value || "1", 10);
+                  if (!Number.isNaN(v)) goToPage(v);
+                }}
+                style={{ width: 70 }}
+                disabled={isPageLoading}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };

@@ -1,3 +1,715 @@
-.header{
+/* Add Station Page Specific Styles */
+
+/* Page Header */
+.add-station-header {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.add-station-title {
+  color: var(--primary-color);
+  font-size: 2rem;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+
+/* Product Selection Section */
+.product-selection-section {
+  background-color: var(--secondary-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.product-selection-label {
+  display: block;
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+}
+
+.product-search-container {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+}
+
+.product-search-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 16px;
+  transition: var(--transition);
+  background-color: var(--secondary-color);
+}
+
+.product-search-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-color-light);
+}
+
+.product-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.product-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: var(--secondary-color);
+  border: 2px solid var(--border-color);
+  border-top: none;
+  border-radius: 0 0 var(--border-radius) var(--border-radius);
+  box-shadow: var(--shadow-hover);
+  z-index: 1000;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.product-dropdown-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  transition: var(--transition);
+  font-size: 14px;
+}
+
+.product-dropdown-item:hover {
+  background-color: var(--background-hover);
+}
+
+.product-dropdown-item.selected {
+  background-color: var(--primary-color-light);
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.product-dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.product-dropdown-empty {
+  padding: 12px 16px;
+  color: var(--text-muted);
+  font-style: italic;
+  text-align: center;
+}
+
+/* Selected Product Display */
+.selected-product-display {
+  margin-top: 1rem;
+  padding: 12px 16px;
+  background-color: var(--primary-color-light);
+  border: 2px solid var(--primary-color);
+  border-radius: var(--border-radius);
+  color: var(--primary-color);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.selected-product-display::before {
+  content: "✓";
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+/* Station Form Section */
+.station-form-section {
+  background-color: var(--secondary-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.station-form-title {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border-light);
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-label {
+  font-weight: 600;
+  color: var(--text-color);
+  margin-bottom: 0.5rem;
+  font-size: 14px;
+}
+
+.form-input {
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 16px;
+  transition: var(--transition);
+  background-color: var(--secondary-color);
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-color-light);
+}
+
+.form-input::placeholder {
+  color: var(--text-muted);
+}
+
+.form-select {
+  padding: 12px 16px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 16px;
+  background-color: var(--secondary-color);
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.form-select:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px var(--primary-color-light);
+}
+
+.form-select-option {
+  padding: 8px;
+}
+
+/* Report Type Section */
+.report-type-section {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--border-light);
+}
+
+.report-type-title {
+  color: var(--text-color);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.report-type-selected {
+  margin-top: 0.5rem;
+  padding: 8px 12px;
+  background-color: var(--primary-color-light);
+  border-radius: var(--border-radius);
+  color: var(--primary-color);
+  font-weight: 600;
+  display: inline-block;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 2px solid var(--border-light);
+}
+
+.btn-save-station {
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 12px 24px;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  font-size: 16px;
+  min-width: 150px;
+}
+
+.btn-save-station:hover:not(:disabled) {
+  background-color: var(--background-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.btn-save-station:disabled {
+  background-color: var(--background-light);
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Multiple Machines Section */
+.multiple-machines-section {
+  background-color: var(--secondary-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.multiple-machines-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 2px solid var(--border-light);
+}
+
+.multiple-machines-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.multiple-machines-label {
+  font-weight: 600;
+  color: var(--text-color);
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+/* Machines Table */
+.machines-table-container {
+  background-color: var(--secondary-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.machines-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.machines-table th {
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+  padding: 15px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.machines-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+
+.machines-table tbody tr:hover {
+  background-color: var(--background-hover);
+}
+
+.machines-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.machine-input {
+  width: 100%;
+  padding: 8px 10px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  font-size: 14px;
+  transition: var(--transition);
+  background-color: var(--secondary-color);
+}
+
+.machine-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px var(--primary-color-light);
+}
+
+.machine-input::placeholder {
+  color: var(--text-muted);
+}
+
+.btn-delete-machine {
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 8px 12px;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.btn-delete-machine:hover {
+  background-color: var(--background-hover);
+  border-color: var(--danger-color);
+  color: var(--danger-color);
+}
+
+.btn-add-machine {
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 10px 20px;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  margin-right: 1rem;
+}
+
+.btn-add-machine:hover {
+  background-color: var(--background-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+.btn-save-machines {
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 10px 20px;
+  border-radius: var(--border-radius);
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.btn-save-machines:hover {
+  background-color: var(--background-hover);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
+
+/* Existing Stations Section */
+.existing-stations-section {
+  background-color: var(--secondary-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  padding: 2rem;
+  margin-bottom: 2rem;
+}
+
+.existing-stations-title {
+  color: var(--primary-color);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--border-light);
+}
+
+.stations-table-container {
+  background-color: var(--secondary-color);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+}
+
+.stations-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0;
+}
+
+.stations-table th {
+  background-color: var(--primary-color);
+  color: var(--secondary-color);
+  padding: 15px 12px;
+  text-align: left;
+  font-weight: 600;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.stations-table td {
+  padding: 12px;
+  border-bottom: 1px solid var(--border-light);
+  vertical-align: middle;
+}
+
+.stations-table tbody tr {
+  transition: var(--transition);
+}
+
+.stations-table tbody tr:hover {
+  background-color: var(--background-hover);
+}
+
+.stations-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Drag Handle for Stations */
+.station-drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  font-size: 18px;
+  text-align: center;
+  user-select: none;
+  padding: 8px;
+  border-radius: var(--border-radius);
+  transition: var(--transition);
+}
+
+.station-drag-handle:hover {
+  background-color: var(--primary-color-light);
+  color: var(--primary-color);
+}
+
+.station-drag-handle:active {
+  cursor: grabbing;
+}
+
+/* Parameter Selector */
+.parameter-selector {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+
+.parameter-selector-trigger {
+  padding: 8px 12px;
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  background-color: var(--secondary-color);
+  cursor: pointer;
+  font-size: 12px;
+  min-height: 36px;
+  display: flex;
+  align-items: center;
+  transition: var(--transition);
+}
+
+.parameter-selector-trigger:hover {
+  border-color: var(--primary-color);
+}
+
+.parameter-selector-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 300px;
+  max-height: 200px;
+  background-color: var(--secondary-color);
+  border: 2px solid var(--border-color);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow-hover);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.parameter-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  border-bottom: 1px solid var(--border-light);
+  outline: none;
+  font-size: 14px;
+  background-color: var(--secondary-color);
+}
+
+.parameter-list {
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.parameter-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid var(--border-light);
+  font-size: 12px;
+  transition: var(--transition);
+}
+
+.parameter-item:hover {
+  background-color: var(--background-hover);
+}
+
+.parameter-item:last-child {
+  border-bottom: none;
+}
+
+.parameter-checkbox {
+  margin-right: 8px;
+  accent-color: var(--primary-color);
+}
+
+.parameter-name {
+  flex: 1;
+}
+
+.parameter-unit {
+  color: var(--text-muted);
+  font-size: 11px;
+  margin-left: 4px;
+}
+
+.parameter-empty {
+  padding: 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  font-style: italic;
+}
+
+/* Loading States */
+.loading-stations {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  color: var(--text-muted);
+}
+
+.loading-stations .spinner {
+  margin-right: 10px;
+}
+
+/* Error States */
+.error-message {
+  color: var(--danger-color);
+  background-color: #f8d7da;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  border-left: 4px solid var(--danger-color);
+  margin-bottom: 1.5rem;
+}
+
+/* Empty States */
+.empty-stations {
+  text-align: center;
+  padding: 3rem 2rem;
+  color: var(--text-muted);
+  background-color: var(--background-light);
+  border-radius: var(--border-radius-lg);
+  border: 2px dashed var(--border-color);
+}
+
+.empty-stations h3 {
+  color: var(--text-light);
+  margin-bottom: 1rem;
+}
+
+.empty-stations p {
+  font-size: 16px;
+  margin-bottom: 1.5rem;
+}
+
+/* Drag and Drop Instructions */
+.drag-instructions {
+  margin-top: 1rem;
+  padding: 8px 12px;
+  background-color: var(--primary-color-light);
+  border-radius: var(--border-radius);
+  color: var(--primary-color);
+  font-size: 12px;
+  font-style: italic;
     text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .stations-table-container,
+  .machines-table-container {
+    overflow-x: auto;
+  }
+  
+  .stations-table,
+  .machines-table {
+    min-width: 1000px;
+  }
+}
+
+@media (max-width: 768px) {
+  .product-selection-section,
+  .station-form-section,
+  .multiple-machines-section,
+  .existing-stations-section {
+    padding: 1.5rem;
+  }
+  
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .btn-save-station {
+    width: 100%;
+  }
+  
+  .stations-table th,
+  .stations-table td,
+  .machines-table th,
+  .machines-table td {
+    padding: 8px 6px;
+    font-size: 12px;
+  }
+  
+  .parameter-selector-dropdown {
+    width: 250px;
+  }
+}
+
+@media (max-width: 480px) {
+  .add-station-title {
+    font-size: 1.5rem;
+  }
+  
+  .stations-table,
+  .machines-table {
+    min-width: 800px;
+  }
+  
+  .stations-table th,
+  .stations-table td,
+  .machines-table th,
+  .machines-table td {
+    padding: 6px 4px;
+    font-size: 11px;
+  }
+  
+  .parameter-selector-dropdown {
+    width: 200px;
+  }
+  
+  .btn-add-machine,
+  .btn-save-machines {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    margin-right: 0;
+  }
 }
