@@ -1,19 +1,12 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 
-const ShiftConfig = () => {
-  const [editingIndex, setEditingIndex] = useState(null);
-  const [editData, setEditData] = useState({
-    id: null,
-    shiftName: "",
-    startTime: "",
-    endTime: "",
-    active: false,
-  });
-
-  const handleEditClick = (index) => {
-    setEditingIndex(index);
-    setEditData({ ...shifts[index] });
-  };
+export default function ShiftConfig() {
+  const [shifts, setShifts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [savingId, setSavingId] = useState(null);
+  const [deletingId, setDeletingId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
+  const [error, setError] = useState("");
 
   const [formData, setFormData] = useState({
     id: null,
@@ -22,8 +15,6 @@ const ShiftConfig = () => {
     endTime: "",
     active: false,
   });
-
-  const [shifts, setShifts] = useState([]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -36,111 +27,133 @@ const ShiftConfig = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    // arrow function stored in normalizeTime, can be called like -> normalizetime(09:30) 5 chars, mysql expects in the formate -> 09:30:00
-    // check if t exists and has 5 char lenght 
     const normalizeTime = (t) => (t && t.length === 5 ? t + ":00" : t || null);
 
-    // != -> loose inequality performs type correction i.e 5 != "5" returns false
-    // !== -> strict inequality type and value must match i.e. 5 != "5" returns true
-    if (editingIndex !== null) {
-      // UPDATE existing row (idempotent [same result if repeated])
-      const payload = {
-        name: editData.shiftName,
-        start_time: normalizeTime(editData.startTime),
-        end_time: normalizeTime(editData.endTime),
-        is_active: editData.active ? 1 : 0,
-      };
+    const payload = {
+      name: formData.shiftName,
+      start_time: normalizeTime(formData.startTime),
+      end_time: normalizeTime(formData.endTime),
+      is_active: formData.active ? 1 : 0,
+    };
 
-      try {
-        const res = await fetch(`/api/shifts/${editData.id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        // throw statement raises an exception, control leaves current execution and looks for catch, here the promise is thus rejected
-        // create a new instance of error, and set the message to the input param 
-        if (!res.ok) throw new Error("Update failed");
+    try {
+      const res = await fetch("http://localhost:5000/api/shifts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) throw new Error("Create failed");
 
-        await res.json().catch(() => null);
+      const created = await res.json().catch(() => null);
 
-        // setShifts(shifts.map((s, i) => (i === editingIndex ? editData : s)));
+      const newShift = created && created.id
+        ? {
+            id: created.id,
+            shiftName: created.name ?? formData.shiftName,
+            startTime: (created.start_time || formData.startTime || "").slice(0,5),
+            endTime: (created.end_time || formData.endTime || "").slice(0,5),
+            active: !!(created.is_active ?? formData.active),
+          }
+        : {
+            id: null,
+            shiftName: formData.shiftName,
+            startTime: formData.startTime,
+            endTime: formData.endTime,
+            active: formData.active,
+          };
 
-        // react state setters can take value or function as input below function is input where prev means previous state
-        // if function is called then react gives it the current(prevoius) state as first argument
-        setShifts((prev) =>
-          // s is current element and i is index of that element 
-          prev.map((s, i) =>
-            i === editingIndex
-              ? {
-                  id: editData.id,
-                  shiftName: editData.shiftName,
-                  startTime: editData.startTime,
-                  endTime: editData.endTime,
-                  active: !!editData.active,
-                }
-              : s
-          )
-        );
-
-        setEditingIndex(null);
-        setEditData({ id: null, shiftName: "", startTime: "", endTime: "", active: false });
-      } catch (err) {
-        console.error(err);
-        // optionally show user-facing error
-      }
-    } else {
-      // CREATE new row
-      const payload = {
-        name: formData.shiftName,
-        start_time: normalizeTime(formData.startTime),
-        end_time: normalizeTime(formData.endTime),
-        is_active: formData.active ? 1 : 0,
-      };
-
-      try {
-        const res = await fetch("/api/shifts", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error("Create failed");
-
-        // server may return created row or { insertId }
-        const created = await res.json().catch(() => null);
-
-        const newShift = created && created.id
-          ? {
-              id: created.id,
-              shiftName: created.name ?? formData.shiftName,
-              startTime: (created.start_time || formData.startTime || "").slice(0,5),
-              endTime: (created.end_time || formData.endTime || "").slice(0,5),
-              active: !!(created.is_active ?? formData.active),
-            }
-          : {
-              // fallback if server returns nothing useful
-              id: null,
-              shiftName: formData.shiftName,
-              startTime: formData.startTime,
-              endTime: formData.endTime,
-              active: formData.active,
-            };
-
-        setShifts((prev) => [...prev, newShift]);
-        setFormData({ id: null, shiftName: "", startTime: "", endTime: "", active: false });
-      } catch (err) {
-        console.error(err);
-      }
+      setShifts((prev) => [...prev, newShift]);
+      setFormData({ id: null, shiftName: "", startTime: "", endTime: "", active: false });
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
     }
   };
 
-  const handleDelete = (index) => {
-    const updatedShifts = shifts.filter((_, i) => i !== index);
-    setShifts(updatedShifts);
+  const fetchShifts = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch("http://localhost:5000/api/shifts");
+      const data = await res.json();
+      setShifts(data.map(s => ({
+        id: s.id,
+        shiftName: s.name,
+        startTime: (s.start_time || "").slice(0, 5),
+        endTime: (s.end_time || "").slice(0, 5),
+        active: !!s.is_active,
+      })));
+    } catch (err) {
+      setError("Failed to load shifts");
+    } finally {
+      setLoading(false);
+    }
   };
 
+  useEffect(() => {
+    fetchShifts();
+  }, []);
+
+  const onChangeField = (id, field, value) => {
+    setShifts((prev) => prev.map((s) => (s.id === id ? { ...s, [field]: value } : s)));
+  };
+
+  const onSave = async (shift) => {
+    setSavingId(shift.id);
+    setError("");
+    try {
+      const normalizeTime = (t) => (t && t.length === 5 ? t + ":00" : t || null);
+      const payload = {
+        name: shift.shiftName,
+        start_time: normalizeTime(shift.startTime),
+        end_time: normalizeTime(shift.endTime),
+        is_active: shift.active ? 1 : 0,
+      };
+      const res = await fetch(`http://localhost:5000/api/shifts/${shift.id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({ message: 'An unknown error occurred' }));
+        throw new Error(errorData.message || 'A request failed');
+      }
+
+      setEditingId(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const onDelete = async (id) => {
+    if (!window.confirm("Delete this shift?")) return;
+    setDeletingId(id);
+    setError("");
+    try {
+      const res = await fetch(`http://localhost:5000/api/shifts/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Delete failed");
+      setShifts((prev) => prev.filter((s) => s.id !== id));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const headerStyle = { background: "#f7f7f7", fontWeight: 600 };
+  const actionBtn = { padding: "6px 10px", marginRight: 8 };
+  const inputStyle = { width: "100%", padding: 6, boxSizing: "border-box" };
+
   return (
-    <div style={{ padding: "20px" }}>
-      <h1>Shift Configuration</h1>
+    <div style={{ padding: 20 }}>
+      <h1 style={{ marginTop: 0 }}>Shift Configuration</h1>
+      {error && (
+        <div style={{ background: "#ffe8e8", color: "#b00020", padding: 10, marginBottom: 12 }}>
+          {error}
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} style={{ marginBottom: "20px" }}>
         <div>
@@ -190,118 +203,64 @@ const ShiftConfig = () => {
         <button type="submit">Save</button>
       </form>
 
-      {shifts.length > 0 && (
-        <table
-          border="1"
-          cellPadding="10"
-          style={{ borderCollapse: "collapse" }}
-        >
+      <div style={{ overflowX: "auto" }}>
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th>#</th>
-              <th>Shift Name</th>
-              <th>Start Time</th>
-              <th>End Time</th>
-              <th>Active</th>
-              <th>Edit</th>
-              <th>Delete</th>
+              <th style={{ ...headerStyle, textAlign: "left", padding: 8 }}>Shift Name</th>
+              <th style={{ ...headerStyle, textAlign: "left", padding: 8 }}>Start Time</th>
+              <th style={{ ...headerStyle, textAlign: "left", padding: 8 }}>End Time</th>
+              <th style={{ ...headerStyle, textAlign: "left", padding: 8 }}>Active</th>
+              <th style={{ ...headerStyle, textAlign: "left", padding: 8 }}>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {shifts.map((shift, index) => (
-              <tr key={index}>
-                <td>{index + 1}</td>
-
-                <td>
-                  {editingIndex === index ? (
-                    <input
-                      value={editData.shiftName}
-                      onChange={(e) =>
-                        setEditData({ ...editData, shiftName: e.target.value })
-                      }
-                    />
-                  ) : (
-                    shift.shiftName
-                  )}
-                </td>
-
-                <td>
-                  {editingIndex === index ? (
-                    <input
-                      value={editData.startTime}
-                      onChange={(e) =>
-                        setEditData({ ...editData, startTime: e.target.value })
-                      }
-                    />
-                  ) : (
-                    shift.startTime
-                  )}
-                </td>
-
-                <td>
-                  {editingIndex === index ? (
-                    <input
-                      value={editData.endTime}
-                      onChange={(e) =>
-                        setEditData({ ...editData, endTime: e.target.value })
-                      }
-                    />
-                  ) : (
-                    shift.endTime
-                  )}
-                </td>
-
-                <td>
-                  {editingIndex === index ? (
-                    <input
-                      type = "checkbox"
-                      // double not is used to force convert anything to boolean 
-                      checked={!!editData.active}
-                      onChange={(e) =>
-                        setEditData({ ...editData, active: e.target.checked })
-                      }
-                    />
-                  ) : shift.active ? (
-                    "Yes"
-                  ) : (
-                    "No"
-                  )}
-                </td>
-
-                <td>
-                  <button
-                    type="button"
-                    onClick={() => handleEditClick(index)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Edit
-                  </button>
-                </td>
-
-                <td>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(index)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      cursor: "pointer",
-                    }}
-                  >
-                    delete
-                  </button>
-                </td>
+            {loading ? (
+              <tr>
+                <td colSpan={5} style={{ padding: 16 }}>Loading...</td>
               </tr>
-            ))}
+            ) : shifts.length === 0 ? (
+              <tr>
+                <td colSpan={5} style={{ padding: 16 }}>No shifts found</td>
+              </tr>
+            ) : (
+              shifts.map((s) => (
+                <tr key={s.id}>
+                  <td style={{ padding: 6 }}>
+                    <input value={s.shiftName ?? ""} onChange={(e) => onChangeField(s.id, "shiftName", e.target.value)} style={inputStyle} disabled={editingId !== s.id} />
+                  </td>
+                  <td style={{ padding: 6 }}>
+                    <input type="time" value={s.startTime ?? ""} onChange={(e) => onChangeField(s.id, "startTime", e.target.value)} style={inputStyle} disabled={editingId !== s.id} />
+                  </td>
+                  <td style={{ padding: 6 }}>
+                    <input type="time" value={s.endTime ?? ""} onChange={(e) => onChangeField(s.id, "endTime", e.target.value)} style={inputStyle} disabled={editingId !== s.id} />
+                  </td>
+                  <td style={{ padding: 6 }}>
+                    <input type="checkbox" checked={s.active} onChange={(e) => onChangeField(s.id, "active", e.target.checked)} style={{ ...inputStyle, width: 'auto' }} disabled={editingId !== s.id} />
+                  </td>
+                  <td style={{ padding: 6, whiteSpace: "nowrap" }}>
+                    {editingId === s.id ? (
+                      <>
+                        <button style={{ ...actionBtn, background: "#007bff", color: "white" }} disabled={savingId === s.id} onClick={() => onSave(s)}>
+                          {savingId === s.id ? "Saving..." : "Save"}
+                        </button>
+                        <button style={{ ...actionBtn }} onClick={async () => { setEditingId(null); await fetchShifts(); }}>Cancel</button>
+                      </>
+                    ) : (
+                      <>
+                        <button style={{ ...actionBtn, background: "#007bff", color: "white" }} onClick={() => setEditingId(s.id)}>Edit</button>
+                        <button style={{ ...actionBtn, background: "#dc3545", color: "white" }} disabled={deletingId === s.id} onClick={() => onDelete(s.id)}>
+                          {deletingId === s.id ? "Deleting..." : "Delete"}
+                        </button>
+                      </>
+                    )}
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
-      )}
+      </div>
     </div>
   );
-};
-
-export default ShiftConfig;
+}

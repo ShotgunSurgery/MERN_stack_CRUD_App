@@ -81,13 +81,34 @@ export default function Users() {
         role: normalize(user.role),
         status: allowedStatus.has(user.status) ? user.status : null,
       };
-      const res = await fetch(`http://localhost:5000/api/users/${user.id}`, {
+      const userSave = fetch(`http://localhost:5000/api/users/${user.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Edit failed");
+
+      const promises = [userSave];
+
+      if (openPermsUserId === user.id) {
+        const permsSave = fetch(`http://localhost:5000/api/users/${user.id}/permissions`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ permissions: permsDraft })
+        });
+        promises.push(permsSave);
+      }
+
+      const responses = await Promise.all(promises);
+
+      for (const res of responses) {
+        if (!res.ok) {
+          const errorData = await res.json().catch(() => ({ message: 'An unknown error occurred' }));
+          throw new Error(errorData.message || 'A request failed');
+        }
+      }
+
       setEditingId(null);
+      setOpenPermsUserId(null); // Close permissions on save
     } catch (err) {
       setError(err.message);
     } finally {
@@ -123,19 +144,7 @@ export default function Users() {
     }));
   };
 
-  const savePermissions = async (userId) => {
-    try {
-      const res = await fetch(`http://localhost:5000/api/users/${userId}/permissions`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ permissions: permsDraft })
-      });
-      if (!res.ok) throw new Error("Failed to save permissions");
-      alert("Permissions updated");
-    } catch (e) {
-      setError(e.message);
-    }
-  };
+  
 
   // Registration removed from Users page
 
@@ -230,11 +239,13 @@ export default function Users() {
                         <button style={{ ...actionBtn }} onClick={async () => { setEditingId(null); await fetchUsers(); }}>Cancel</button>
                       </>
                     ) : (
-                      <button style={{ ...actionBtn, background: "#007bff", color: "white" }} onClick={() => setEditingId(u.id)}>Edit</button>
+                      <>
+                        <button style={{ ...actionBtn, background: "#007bff", color: "white" }} onClick={() => setEditingId(u.id)}>Edit</button>
+                        <button style={{ ...actionBtn, background: "#dc3545", color: "white" }} disabled={deletingId === u.id} onClick={() => onDelete(u.id)}>
+                          {deletingId === u.id ? "Deleting..." : "Delete"}
+                        </button>
+                      </>
                     )}
-                    <button style={{ ...actionBtn, background: "#dc3545", color: "white" }} disabled={deletingId === u.id} onClick={() => onDelete(u.id)}>
-                      {deletingId === u.id ? "Deleting..." : "Delete"}
-                    </button>
                   </td>
                 </tr>
                 {openPermsUserId === u.id && (
@@ -255,15 +266,13 @@ export default function Users() {
                             <div key={moduleName} style={{ display: "grid", gridTemplateColumns: "1.5fr repeat(4, 1fr)", gap: 8, padding: 8, borderBottom: "1px solid #eee" }}>
                               <div>{moduleName}</div>
                               {(["view","add","update","delete"]).map(key => (
-                                <div key={key}>
-                                  <input type="checkbox" checked={!!(permsDraft[moduleName]?.[key])} onChange={() => togglePermission(moduleName, key)} />
+                                <div key={key} style={{ opacity: editingId !== u.id ? 0.5 : 1 }}>
+                                  <input type="checkbox" checked={!!(permsDraft[moduleName]?.[key])} onChange={() => togglePermission(moduleName, key)} disabled={editingId !== u.id} />
                                 </div>
                               ))}
                             </div>
                           ))}
-                          <div style={{ marginTop: 8 }}>
-                            <button style={{ ...actionBtn, background: "#007bff", color: "white" }} onClick={() => savePermissions(u.id)}>Save Permissions</button>
-                          </div>
+                          
                         </div>
                       )}
                     </td>
