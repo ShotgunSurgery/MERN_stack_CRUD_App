@@ -53,8 +53,8 @@ export default function NavBar() {
         >
           Users
         </Link>
-        <Link 
-          to="/shiftConfig" 
+        <Link
+          to="/shiftConfig"
           className={`navbar-link ${location.pathname === "/shiftConfig" ? "active" : ""}`}
         >
           Shift Configuration
