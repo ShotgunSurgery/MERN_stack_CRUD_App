@@ -192,70 +192,70 @@ export const registerUser = async (req, res) => {
   }
 };
 
-// export const getUserPermissions = async (req, res) => {
-//   const { id } = req.params;
-//   try {
-//     const [rows] = await db.query(
-//       `SELECT module_name, can_view, can_add, can_update, can_delete
-//        FROM user_permissions WHERE user_id = ? ORDER BY module_name`,
-//       [id]
-//     );
-//     const permissions = {};
-//     rows.forEach(r => {
-//       permissions[r.module_name] = {
-//         view: !!r.can_view,
-//         add: !!r.can_add,
-//         update: !!r.can_update,
-//         delete: !!r.can_delete,
-//       };
-//     });
-//     res.json(permissions);
-//   } catch (err) {
-//     res.status(500).json({ error: "Failed to fetch permissions", details: err.message });
-//   }
-// };
+export const getUserPermissions = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const [rows] = await db.query(
+      `SELECT module_name, can_view, can_add, can_update, can_delete
+       FROM user_permissions WHERE user_id = ? ORDER BY module_name`,
+      [id]
+    );
+    const permissions = {};
+    rows.forEach(r => {
+      permissions[r.module_name] = {
+        view: !!r.can_view,
+        add: !!r.can_add,
+        update: !!r.can_update,
+        delete: !!r.can_delete,
+      };
+    });
+    res.json(permissions);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch permissions", details: err.message });
+  }
+};
 
-// export const updateUserPermissions = async (req, res) => {
-//   const { id } = req.params;
-//   const { permissions } = req.body; // { moduleName: {view, add, update, delete}, ... }
-//   if (!permissions || typeof permissions !== 'object') {
-//     return res.status(400).json({ error: 'permissions object is required' });
-//   }
-//   const conn = await db.getConnection();
-//   try {
-//     await conn.beginTransaction();
-//     for (const [moduleName, perms] of Object.entries(permissions)) {
-//       // Upsert
-//       const [existing] = await conn.query(
-//         `SELECT id FROM user_permissions WHERE user_id=? AND module_name=?`,
-//         [id, moduleName]
-//       );
-//       if (existing.length > 0) {
-//         await conn.query(
-//           `UPDATE user_permissions SET can_view=?, can_add=?, can_update=?, can_delete=?
-//            WHERE user_id=? AND module_name=?`,
-//           [perms.view ? 1 : 0, perms.add ? 1 : 0, perms.update ? 1 : 0, perms.delete ? 1 : 0, id, moduleName]
-//         );
-//       } else {
-//         await conn.query(
-//           `INSERT INTO user_permissions (user_id, module_name, can_view, can_add, can_update, can_delete)
-//            VALUES (?, ?, ?, ?, ?, ?)`,
-//           [id, moduleName, perms.view ? 1 : 0, perms.add ? 1 : 0, perms.update ? 1 : 0, perms.delete ? 1 : 0]
-//         );
-//       }
-//     }
-//     await conn.commit();
-//     res.json({ message: 'Permissions updated' });
-//   } catch (err) {
-//     await conn.rollback();
-//     res.status(500).json({ error: 'Failed to update permissions', details: err.message });
-//   } finally {
-//     conn.release();
-//   }
-// };
+export const updateUserPermissions = async (req, res) => {
+  const { id } = req.params;
+  const { permissions } = req.body; // { moduleName: {view, add, update, delete}, ... }
+  if (!permissions || typeof permissions !== 'object') {
+    return res.status(400).json({ error: 'permissions object is required' });
+  }
+  const conn = await db.getConnection();
+  try {
+    await conn.beginTransaction();
+    for (const [moduleName, perms] of Object.entries(permissions)) {
+      // Upsert
+      const [existing] = await conn.query(
+        `SELECT id FROM user_permissions WHERE user_id=? AND module_name=?`,
+        [id, moduleName]
+      );
+      if (existing.length > 0) {
+        await conn.query(
+          `UPDATE user_permissions SET can_view=?, can_add=?, can_update=?, can_delete=?
+           WHERE user_id=? AND module_name=?`,
+          [perms.view ? 1 : 0, perms.add ? 1 : 0, perms.update ? 1 : 0, perms.delete ? 1 : 0, id, moduleName]
+        );
+      } else {
+        await conn.query(
+          `INSERT INTO user_permissions (user_id, module_name, can_view, can_add, can_update, can_delete)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [id, moduleName, perms.view ? 1 : 0, perms.add ? 1 : 0, perms.update ? 1 : 0, perms.delete ? 1 : 0]
+        );
+      }
+    }
+    await conn.commit();
+    res.json({ message: 'Permissions updated' });
+  } catch (err) {
+    await conn.rollback();
+    res.status(500).json({ error: 'Failed to update permissions', details: err.message });
+  } finally {
+    conn.release();
+  }
+};
 export const getAllUsers = async (req, res) => {
   try {
-    const [users] = await pool.query(
+    const [users] = await db.query(
       `SELECT id, username, first_name, last_name, nickname, mobile_number, 
               designation, joining_date, user_type, status, created_at 
        FROM users 

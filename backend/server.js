@@ -13,6 +13,7 @@ import workerAllocationRoutes from "./routes/workerAllocationRoute.js";
 
 import shiftRoute from "./routes/shifts.js";
 import productNameRoutes from "./routes/productNameRoutes.js";
+import reportRoutes from "./routes/reportRoutes.js";
 
 dotenv.config();
 
@@ -125,6 +126,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/stations", stationRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/worker-allocations", workerAllocationRoutes);
+app.use("/api/reports", reportRoutes);
 
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);

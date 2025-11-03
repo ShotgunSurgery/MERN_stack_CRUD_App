@@ -14,6 +14,7 @@ import UserRegistration from "./pages/UserRegistration";
 
 import ShiftConfig from "./pages/ShiftConfig";
 import AllocateWorker from "./pages/AllocateWorker";
+import Reports from "./pages/Reports";
 
 
 function App() {
@@ -30,6 +31,7 @@ function App() {
         <Route path="/allocateWorker" element={<AllocateWorker/>}></Route>
         <Route path="/shiftConfig" element={<ShiftConfig/>}></Route>
         <Route path="/users" element={<Users/>}></Route>
+        <Route path="/reports" element={<Reports/>}></Route>
 
       </Routes>
     </Router>
